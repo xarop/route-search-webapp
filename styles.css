@@ -28,5 +28,5 @@ footer { text-align: center; padding: 1rem; color: var(--muted); font-size: .85r
   .row label { flex: 1 1 100%; }
   #map { height: 300px; }
   .actions { flex-direction: column; }
-  button { width: 100%; }
+  .results table { display: block; overflow-x: auto; white-space: nowrap; }
 }
