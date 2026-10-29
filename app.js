@@ -7,7 +7,6 @@
 
 // API Endpoints
 const OSRM_DEFAULT = "https://router.project-osrm.org/route/v1/driving";
-const PHOTON_GEOCODE = "https://photon.komoot.io/api/";
 
 // Platform Pricing Profiles for Jockey Relocations
 const platformProfiles = {
@@ -125,7 +124,7 @@ function initMap() {
 }
 
 // ==========================================================================
-// Geocoding via Photon OSM with European Bias & City Preference
+// Geocoding via Nominatim (OpenStreetMap) – Spain-only results (countrycodes=es)
 // ==========================================================================
 async function geocode(place) {
   const trimmed = place.trim();
@@ -134,29 +133,31 @@ async function geocode(place) {
     return geocodeCache.get(cacheKey);
   }
 
-  // Lat/lon bias set to Barcelona (41.38, 2.17) to prioritize Spain/Western Europe
-  const url = `${PHOTON_GEOCODE}?q=${encodeURIComponent(trimmed)}&lat=41.38&lon=2.17&limit=10`;
-  const res = await fetch(url);
+  // Use Nominatim with countrycodes=es to guarantee Spanish cities only
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&countrycodes=es&format=json&limit=5&addressdetails=1`;
+  const res = await fetch(url, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
   if (!res.ok) throw new Error(`Geocoding failed for: ${trimmed}`);
   const data = await res.json();
-  if (!data.features || !data.features.length) {
-    throw new Error(`Location not found: "${trimmed}"`);
+  if (!data || !data.length) {
+    // Fallback: try without country restriction
+    const fallbackUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&limit=3`;
+    const fallbackRes = await fetch(fallbackUrl, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
+    const fallbackData = await fallbackRes.json();
+    if (!fallbackData || !fallbackData.length) throw new Error(`Location not found: "${trimmed}"`);
+    const fb = fallbackData[0];
+    const result = { name: trimmed, fullName: fb.display_name.split(",").slice(0, 2).join(",").trim(), lat: parseFloat(fb.lat), lon: parseFloat(fb.lon) };
+    geocodeCache.set(cacheKey, result);
+    return result;
   }
 
-  // Prioritize Spanish/European cities and towns over homonyms in South America/US
-  const cityMatch = data.features.find(f => 
-    (f.properties.country === "España" || f.properties.countrycode === "ES") &&
-    (f.properties.osm_value === "city" || f.properties.osm_value === "town" || f.properties.osm_key === "place" || f.properties.type === "city")
-  );
-  const esMatch = data.features.find(f => f.properties.country === "España" || f.properties.countrycode === "ES");
-  const f = cityMatch || esMatch || data.features[0];
-
-  const displayName = f.properties.name + (f.properties.city ? `, ${f.properties.city}` : (f.properties.state ? `, ${f.properties.state}` : (f.properties.country ? `, ${f.properties.country}` : "")));
+  // Prefer city/town class over other types
+  const best = data.find(r => r.type === "city" || r.type === "town" || r.addresstype === "city" || r.addresstype === "municipality") || data[0];
+  const shortName = best.display_name.split(",").slice(0, 2).join(",").trim();
   const result = {
     name: trimmed,
-    fullName: displayName,
-    lat: f.geometry.coordinates[1],
-    lon: f.geometry.coordinates[0]
+    fullName: shortName,
+    lat: parseFloat(best.lat),
+    lon: parseFloat(best.lon)
   };
   geocodeCache.set(cacheKey, result);
   return result;
