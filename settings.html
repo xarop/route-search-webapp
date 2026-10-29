@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - Driver Credentials &amp; Platforms</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1 data-i18n="app_title">Real Route Finder</h1>
+          <p data-i18n="app_tagline">Professional vehicle transport & multi-platform mission chain</p>
+        </div>
+      </a>
+
+      <div class="nav-group">
+        <nav class="main-nav">
+          <a href="index.html" data-i18n="nav_home">Home</a>
+          <a href="settings.html" class="active" data-i18n="nav_settings">Settings</a>
+          <a href="help.html" data-i18n="nav_help">Help</a>
+        </nav>
+
+        <div class="controls-group">
+          <select id="langSelect" class="lang-selector" aria-label="Select Language">
+            <option value="ca">CA</option>
+            <option value="es">ES</option>
+            <option value="en">EN</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="de">DE</option>
+          </select>
+
+          <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+            <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span data-i18n="settings_title">Driver Platform Credentials</span>
+        </h2>
+      </div>
+
+      <p class="hint" style="margin-bottom: 1.5rem; color: var(--muted);" data-i18n="settings_subtitle">
+        Configure your access keys and tokens for each platform. Saved locally in your browser.
+      </p>
+
+      <form id="settingsForm">
+        <!-- Otoqi Platform -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-otoqi">Otoqi</span>
+            <span>Otoqi Driver Partner API</span>
+          </h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="otoquiKey">API Key / Driver Token</label>
+              <input type="text" id="otoquiKey" placeholder="e.g. otq_live_9921bc4..." />
+            </div>
+            <div class="field">
+              <label for="otoquiUrl">Custom Endpoint (optional)</label>
+              <input type="url" id="otoquiUrl" placeholder="https://api.otoqi.com/v1" />
+            </div>
+          </div>
+          <p class="hint-box">
+            <span>Obtain your key in the <a href="https://en.otoqi.com/" target="_blank" rel="noopener">Otoqi Driver Portal</a> under Account &gt; Developer / Fleet Partner Access.</span>
+          </p>
+        </div>
+
+        <!-- Driiveme Platform -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-driiveme">Driiveme</span>
+            <span>Driiveme Pro Jockey API</span>
+          </h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="driivemeToken">Access Token (Bearer)</label>
+              <input type="text" id="driivemeToken" placeholder="e.g. drv_token_887162fa..." />
+            </div>
+            <div class="field">
+              <label for="driivemeUrl">Custom Endpoint (optional)</label>
+              <input type="url" id="driivemeUrl" placeholder="https://api.driiveme.com/v1" />
+            </div>
+          </div>
+          <p class="hint-box">
+            <span>Find your credentials in the <a href="https://www.driiveme.com/" target="_blank" rel="noopener">Driiveme Pro Jockey Dashboard</a> under Fleet Management &gt; API.</span>
+          </p>
+        </div>
+
+        <!-- Onlogist Platform -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-onlogist">Onlogist</span>
+            <span>Onlogist Partner Order API</span>
+          </h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="onlogistKey">Partner API Key</label>
+              <input type="text" id="onlogistKey" placeholder="e.g. onl_partner_33104e..." />
+            </div>
+            <div class="field">
+              <label for="onlogistUrl">Custom Endpoint (optional)</label>
+              <input type="url" id="onlogistUrl" placeholder="https://api.onlogist.com/v1" />
+            </div>
+          </div>
+          <p class="hint-box">
+            <span>Request key via <a href="https://www.onlogist.com/" target="_blank" rel="noopener">Onlogist Portal</a> &gt; B2B Partner API Section.</span>
+          </p>
+        </div>
+
+        <!-- OSRM & Navigation Settings -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Navigation &amp; Road Engine</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="osrmUrl">OSRM Road Router Base URL</label>
+              <input type="url" id="osrmUrl" value="https://router.project-osrm.org" />
+            </div>
+            <div class="field">
+              <label for="googleKey">Google Maps Directions API Key (optional)</label>
+              <input type="text" id="googleKey" placeholder="AIzaSy... (leave blank to use free OSRM)" />
+            </div>
+            <div class="field">
+              <label for="navAppPref">Preferred Mobile Navigation App</label>
+              <select id="navAppPref">
+                <option value="both" selected>Offer both Google Maps &amp; Waze</option>
+                <option value="gmaps">Prioritize Google Maps</option>
+                <option value="waze">Prioritize Waze</option>
+              </select>
+            </div>
+          </div>
+          <p class="hint-box">
+            <span>OSRM uses OpenStreetMap road data and does not require any paid key. Google Maps is only needed if you want official Google Directions.</span>
+          </p>
+        </div>
+
+        <div class="actions-bar">
+          <button type="submit" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span>Save Settings</span>
+          </button>
+          <button type="button" id="resetDefaultsBtn" class="btn-secondary">Reset to Defaults</button>
+        </div>
+      </form>
+
+      <div id="statusMessage" style="margin-top: 1rem; font-weight: 600;"></div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <p>
+        <span data-i18n="footer_note">Developed in Barcelona by</span>
+        <a href="https://xarop.com" target="_blank" rel="noopener">xarop.com</a>
+        &middot; Otoqi, Driiveme &amp; Onlogist B2B Jockey Assistant
+      </p>
+      <p>OSRM &middot; OpenStreetMap &middot; Leaflet</p>
+    </div>
+  </footer>
+
+  <script src="i18n.js"></script>
+  <script>
+    function encodeVal(val) { return btoa(unescape(encodeURIComponent(val || ''))); }
+    function decodeVal(val) { try { return decodeURIComponent(escape(atob(val || ''))); } catch(e) { return ''; } }
+
+    function loadSettings() {
+      document.getElementById('osrmUrl').value = decodeVal(localStorage.getItem('osrmUrl')) || 'https://router.project-osrm.org';
+      document.getElementById('googleKey').value = decodeVal(localStorage.getItem('googleKey'));
+      document.getElementById('otoquiKey').value = decodeVal(localStorage.getItem('otoquiKey'));
+      document.getElementById('otoquiUrl').value = decodeVal(localStorage.getItem('otoquiUrl'));
+      document.getElementById('driivemeToken').value = decodeVal(localStorage.getItem('driivemeToken'));
+      document.getElementById('driivemeUrl').value = decodeVal(localStorage.getItem('driivemeUrl'));
+      document.getElementById('onlogistKey').value = decodeVal(localStorage.getItem('onlogistKey'));
+      document.getElementById('onlogistUrl').value = decodeVal(localStorage.getItem('onlogistUrl'));
+      document.getElementById('navAppPref').value = localStorage.getItem('navAppPref') || 'both';
+    }
+
+    function saveSettings(e) {
+      e.preventDefault();
+      localStorage.setItem('osrmUrl', encodeVal(document.getElementById('osrmUrl').value.trim()));
+      localStorage.setItem('googleKey', encodeVal(document.getElementById('googleKey').value.trim()));
+      localStorage.setItem('otoquiKey', encodeVal(document.getElementById('otoquiKey').value.trim()));
+      localStorage.setItem('otoquiUrl', encodeVal(document.getElementById('otoquiUrl').value.trim()));
+      localStorage.setItem('driivemeToken', encodeVal(document.getElementById('driivemeToken').value.trim()));
+      localStorage.setItem('driivemeUrl', encodeVal(document.getElementById('driivemeUrl').value.trim()));
+      localStorage.setItem('onlogistKey', encodeVal(document.getElementById('onlogistKey').value.trim()));
+      localStorage.setItem('onlogistUrl', encodeVal(document.getElementById('onlogistUrl').value.trim()));
+      localStorage.setItem('navAppPref', document.getElementById('navAppPref').value);
+
+      const msg = document.getElementById('statusMessage');
+      msg.textContent = '✓ Configuration saved successfully in browser local storage.';
+      msg.style.color = 'var(--success)';
+      setTimeout(() => { msg.textContent = ''; }, 4000);
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+    document.getElementById('resetDefaultsBtn').addEventListener('click', () => {
+      if (confirm('Reset settings to standard defaults?')) {
+        document.getElementById('osrmUrl').value = 'https://router.project-osrm.org';
+        document.getElementById('googleKey').value = '';
+        document.getElementById('otoquiKey').value = '';
+        document.getElementById('otoquiUrl').value = '';
+        document.getElementById('driivemeToken').value = '';
+        document.getElementById('driivemeUrl').value = '';
+        document.getElementById('onlogistKey').value = '';
+        document.getElementById('onlogistUrl').value = '';
+        document.getElementById('navAppPref').value = 'both';
+      }
+    });
+
+    // Theme toggle handling
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const sunSvg = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const moonSvg = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    const savedTheme = localStorage.getItem('app_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeIcon.innerHTML = savedTheme === 'dark' ? sunSvg : moonSvg;
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', current);
+      localStorage.setItem('app_theme', current);
+      themeIcon.innerHTML = current === 'dark' ? sunSvg : moonSvg;
+    });
+
+    loadSettings();
+  </script>
+</body>
+</html>

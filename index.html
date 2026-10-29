@@ -1,81 +1,205 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Real Route Finder - Otoqui / Driiveme / Onlogist</title>
+  <title>Real Route Finder - Otoqi · Driiveme · Onlogist</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 </head>
 <body>
+  <!-- Header -->
   <header>
-<div style="display:flex;justify-content:space-between;align-items:center;">
-<div>
-<h1>Real Route Finder</h1>
-<p>Platforms: Otoqui, Driiveme and Onlogist · Multi-leg routes · Default origin/destination: Barcelona · 1 day</p>
-</div>
-<button id="themeToggle" class="theme-toggle" aria-label="Toggle theme"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
-</div>
+    <div class="header-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1 data-i18n="app_title">Real Route Finder</h1>
+          <p data-i18n="app_tagline">Professional vehicle transport & multi-platform mission chain</p>
+        </div>
+      </a>
+
+      <div class="nav-group">
+        <nav class="main-nav">
+          <a href="index.html" class="active" data-i18n="nav_home">Home</a>
+          <a href="settings.html" data-i18n="nav_settings">Settings</a>
+          <a href="help.html" data-i18n="nav_help">Help</a>
+        </nav>
+
+        <div class="controls-group">
+          <!-- Language Selector -->
+          <select id="langSelect" class="lang-selector" aria-label="Select Language">
+            <option value="ca">CA</option>
+            <option value="es">ES</option>
+            <option value="en">EN</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="de">DE</option>
+          </select>
+
+          <!-- Theme Toggle Button -->
+          <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+            <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </header>
 
+  <!-- Main Content -->
   <main>
-    <section class="panel">
-      <h2>Route configuration</h2>
-      <div class="row">
-        <label>Initial origin
-          <input id="origin" value="Barcelona" />
-        </label>
-        <label>Final destination
-          <input id="destination" value="Barcelona" />
-        </label>
-        <label>Total days
-          <input id="totalDays" type="number" min="1" value="1" />
-        </label>
+    <!-- Route & Mission Configuration Card -->
+    <section class="card">
+      <div class="card-header">
+        <h2 data-i18n="route_config">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          <span data-i18n="route_config">Route & Mission Planner</span>
+        </h2>
       </div>
 
-      <div class="row">
-        <label>Intermediate stops (comma separated)
-          <input id="stops" placeholder="Zaragoza, Madrid, Valencia, Tarragona" />
-        </label>
-        <label>Platforms
+      <div class="form-grid">
+        <div class="field">
+          <label for="origin" data-i18n="initial_origin">Initial Origin</label>
+          <input id="origin" value="Barcelona" placeholder="e.g. Barcelona" />
+        </div>
+
+        <div class="field">
+          <label for="destination" data-i18n="final_destination">Final Destination</label>
+          <input id="destination" value="Barcelona" placeholder="e.g. Barcelona" />
+        </div>
+
+        <div class="field">
+          <label for="totalDays" data-i18n="total_days">Total Days</label>
+          <input id="totalDays" type="number" min="1" max="14" value="1" />
+        </div>
+
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="stops" data-i18n="intermediate_stops">Intermediate stops (comma separated)</label>
+          <input id="stops" value="Tarragona, Zaragoza" placeholder="e.g. Tarragona, Zaragoza, Valencia, Madrid" data-i18n-placeholder="stops_placeholder" />
+        </div>
+
+        <div class="field">
+          <label for="providers" data-i18n="platforms_label">Platforms to include</label>
           <select id="providers" multiple>
-            <option value="otoqui" selected>Otoqui</option>
-            <option value="driiveme" selected>Driiveme</option>
-            <option value="onlogist" selected>Onlogist</option>
+            <option value="otoqui" selected>Otoqi (B2B Deliveries)</option>
+            <option value="driiveme" selected>Driiveme (Pro Vehicle Relocation)</option>
+            <option value="onlogist" selected>Onlogist (Single Transfers)</option>
           </select>
-        </label>
+        </div>
+
+        <div class="field">
+          <label for="prefStrategy" data-i18n="strategy_label">Optimization strategy</label>
+          <select id="prefStrategy">
+            <option value="profit" selected data-i18n="strategy_max_profit">Maximum Profit (Chain missions)</option>
+            <option value="fastest" data-i18n="strategy_fastest">Fastest Time (Direct road)</option>
+            <option value="cheapest" data-i18n="strategy_cheapest">Cheapest (Avoid tolls)</option>
+          </select>
+        </div>
       </div>
 
-      <div class="actions">
-        <button id="searchBtn">Search routes</button>
-        <button id="exampleBtn">Load example Barcelona→…→Barcelona</button>
-        <button id="clearBtn">Clear</button>
+      <div class="actions-bar">
+        <button id="searchBtn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span data-i18n="search_routes">Search & Chain Missions</span>
+        </button>
+
+        <button id="exampleBtn" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          <span data-i18n="load_example">Load Example (BCN Loop)</span>
+        </button>
+
+        <button id="clearBtn" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span data-i18n="clear_btn">Clear</span>
+        </button>
       </div>
-      <p class="hint">Tip: you can add stops to create a multi-leg route. Calculations use real road distances/times (OSRM) and geocoding (OpenStreetMap).</p>
+
+      <div class="hint-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span data-i18n="hint_text">Calculates real road routes (OSRM / OpenStreetMap) and finds matching missions across Otoqi, Driiveme, and Onlogist.</span>
+      </div>
     </section>
 
-    <section class="panel">
-      <h2>Results</h2>
-      <div id="summary" class="summary"></div>
-      <div id="results" class="results"></div>
+    <!-- Results Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span data-i18n="results_title">Suggested Route & Mission Alternatives</span>
+        </h2>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div id="summary" class="summary-banner">
+        <div data-i18n="summary_calculating">Calculating road routes and querying platforms...</div>
+      </div>
+
+      <!-- Combined Itinerary Table -->
+      <div class="table-wrapper">
+        <div id="results"></div>
+      </div>
+
+      <!-- Driver Action Protocol by Platform -->
+      <div class="driver-guide" id="driverInstructions">
+        <!-- Injected dynamically based on matched platforms -->
+      </div>
     </section>
 
-    <section class="panel">
-      <h2>Map</h2>
+    <!-- Map Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+          <span data-i18n="map_title">Interactive Route Map</span>
+        </h2>
+      </div>
       <div id="map"></div>
     </section>
   </main>
 
+  <!-- Footer -->
   <footer>
-    <p>Note: Otoqui/Driiveme/Onlogist are B2B platforms without public APIs. This project includes (mock) adapters you can replace with real calls when you have access. Developed in Barcelona by <a href="https://xarop.com" target="_blank" rel="noopener">xarop.com</a></p>
+    <div class="footer-content">
+      <p>
+        <span data-i18n="footer_note">Developed in Barcelona by</span>
+        <a href="https://xarop.com" target="_blank" rel="noopener">xarop.com</a>
+        &middot; Otoqi, Driiveme &amp; Onlogist B2B Jockey Assistant
+      </p>
+      <p>OSRM &middot; OpenStreetMap &middot; Leaflet</p>
+    </div>
   </footer>
 
+  <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
-<div id="google_translate_element" style="position:fixed;bottom:10px;right:10px;z-index:9999;"></div>
-<script type="text/javascript">
-function googleTranslateElementInit(){ new google.translate.TranslateElement({pageLanguage:'en', includedLanguages:'en,es,ca,de,fr,it,pt,gl,eu,nl,pl,ro,hr,sl,sk,cs,hu,da,sv,no,fi,el,tr,ru,uk', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element'); }
-</script>
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
-</html>>
+</html>
