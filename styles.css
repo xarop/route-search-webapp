@@ -20,4 +20,11 @@ button#clearBtn { background: #6b7280; }
 .results th { background: #f8fafc; color: #6b7280; font-weight: 500; }
 .badge { display: inline-block; padding: .15rem .45rem; border-radius: 999px; font-size: .75rem; background: #f3f4f6; color: #111827; }
 #map { height: 420px; border-radius: 8px; border: 1px solid #e5e7eb; }
+@media (max-width: 640px) {
+  .row { flex-direction: column; }
+  .row label { flex: 1 1 100%; }
+  #map { height: 300px; }
+  .actions { flex-direction: column; }
+  button { width: 100%; }
+}
 footer { text-align: center; padding: 1rem; color: #6b7280; font-size: .85rem; }

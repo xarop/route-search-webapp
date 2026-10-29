@@ -33,6 +33,13 @@ th{background:#f8fafc}
 .hidden{display:none}
 .checklist li{margin:.4rem 0;list-style:none}
 .checklist input{width:auto;margin-right:.5rem}
+@media (max-width: 640px) {
+  .row { flex-direction: column; }
+  .row > * { flex: 1 1 100%; }
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+  nav { flex-wrap: wrap; }
+  nav button { flex: 1 1 45%; }
+}
 </style>
 </head>
 <body>
