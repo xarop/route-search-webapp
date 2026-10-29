@@ -398,8 +398,8 @@ button.btn-secondary:hover {
 }
 
 .hint-box {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
+  margin: 1.25rem 0;
+  padding: 0.85rem 1.1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -407,7 +407,7 @@ button.btn-secondary:hover {
   color: var(--muted);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 /* ==========================================================================
@@ -482,13 +482,13 @@ button.btn-secondary:hover {
   border: 1px solid rgba(245, 158, 11, 0.3);
   color: #92400e;
   border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
+  padding: 0.95rem 1.15rem;
   font-size: 0.85rem;
-  line-height: 1.4;
-  margin-top: 0.75rem;
+  line-height: 1.5;
+  margin: 1.25rem 0 0.5rem 0;
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 [data-theme="dark"] .alert-day-limit {
@@ -497,6 +497,14 @@ button.btn-secondary:hover {
   border-color: rgba(245, 158, 11, 0.4);
 }
 
+
+.summary-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
 
 .summary-headline {
   font-size: 1.05rem;
