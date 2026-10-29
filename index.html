@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buscador de Rutas Reales - Otoqui / Driiveme / Onlogist</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+</head>
+<body>
+  <header>
+    <h1>Buscador de Rutas Reales</h1>
+    <p>Plataformas: Otoqui, Driiveme y Onlogist · Rutas con varios viajes · Origen/destino por defecto: Barcelona · 1 día</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Configuración de ruta</h2>
+      <div class="row">
+        <label>Origen inicial
+          <input id="origin" value="Barcelona" />
+        </label>
+        <label>Destino final
+          <input id="destination" value="Barcelona" />
+        </label>
+        <label>Días totales
+          <input id="totalDays" type="number" min="1" value="1" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Paradas intermedias (separadas por coma)
+          <input id="stops" placeholder="Zaragoza, Madrid, Valencia, Tarragona" />
+        </label>
+        <label>Plataformas
+          <select id="providers" multiple>
+            <option value="otoqui" selected>Otoqui</option>
+            <option value="driiveme" selected>Driiveme</option>
+            <option value="onlogist" selected>Onlogist</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="searchBtn">Buscar rutas</button>
+        <button id="exampleBtn">Cargar ejemplo Barcelona→…→Barcelona</button>
+        <button id="clearBtn">Limpiar</button>
+      </div>
+      <p class="hint">Consejo: puedes escribir paradas para crear una ruta con varios viajes. El cálculo usa distancias/tiempos reales por carretera (OSRM) y geocodificación (OpenStreetMap).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Resultados</h2>
+      <div id="summary" class="summary"></div>
+      <div id="results" class="results"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Mapa</h2>
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Nota: las plataformas Otoqui/Driiveme/Onlogist son B2B y no exponen APIs públicas sin credenciales. Este proyecto incluye adaptadores (mock) que puedes sustituir por llamadas reales cuando tengas acceso.</p>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
