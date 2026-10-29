@@ -37,5 +37,14 @@ Inspired by xarop.com: clean, light, generous whitespace, subtle borders, no hea
 - Max width: 1100px (or 1200px for dashboards)
 - Centered content with side padding
 
+## Theme
+- Support light/dark via toggle, persist in localStorage.
+- Use CSS variables for colors.
+
+## Responsive
+- Hamburger menu on mobile (<=768px).
+- Stack columns on small screens.
+- Tables scroll horizontally.
+
 ## Developed in Barcelona by xarop.com
 https://xarop.com
