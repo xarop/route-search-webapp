@@ -74,6 +74,17 @@ th{background:#0f172a}
 </section>
 <section id="chain" class="tabcontent hidden">
 <div class="card">
+<h3>Route planner (combine missions)</h3>
+<p class="muted">Find multi-leg routes from origin to destination using available missions.</p>
+<div class="row">
+<label>Origin<input id="planOrigin" value="Barcelona El Prat T1"></label>
+<label>Destination<input id="planDest" value="Barcelona El Prat T1"></label>
+<label>Max legs<input id="planMax" type="number" value="4"></label>
+</div>
+<button class="btn" id="planRouteBtn">Find combined route</button>
+<div id="planResults" style="margin-top:1rem"></div>
+</div>
+<div class="card">
 <h3>Round-trip chain builder</h3>
 <p class="muted">Select an outbound mission to find compatible return/intermediate legs by destination.</p>
 <label>Outbound mission<select id="chainOrigin"></select></label>
@@ -334,7 +345,36 @@ document.getElementById("importJsonBtn").addEventListener("click",()=>{
     saveMissions(); renderAll(); alert("Imported "+arr.length+" missions");
   }catch(e){ alert("JSON error: "+e.message); }
 });
-document.getElementById("buildChainBtn").addEventListener("click",()=>{
+document.getElementById("planRouteBtn").addEventListener("click",()=>{
+  const origin=document.getElementById("planOrigin").value.trim().toLowerCase();
+  const dest=document.getElementById("planDest").value.trim().toLowerCase();
+  const maxLegs=parseInt(document.getElementById("planMax").value)||4;
+  const results=[];
+  function dfs(current, visited, path, totalNet, totalKm, totalMin){
+    if(current===dest && path.length>0){ results.push({path:[...path], totalNet, totalKm, totalMin}); }
+    if(path.length>=maxLegs) return;
+    for(const m of missions){
+      if(visited.has(m.id)) continue;
+      if(m.origin.toLowerCase()!==current) continue;
+      visited.add(m.id);
+      path.push(m);
+      dfs(m.destination.toLowerCase(), visited, path, totalNet+netProfit(m), totalKm+m.distanceKm, totalMin+m.durationMin);
+      path.pop();
+      visited.delete(m.id);
+    }
+  }
+  dfs(origin, new Set(), [], 0, 0, 0);
+  // sort by net profit desc
+  results.sort((a,b)=>b.totalNet-a.totalNet);
+  const el=document.getElementById("planResults");
+  if(!results.length){el.innerHTML="<p class='muted'>No combined routes found.</p>";return;}
+  let html="<table><thead><tr><th>Route</th><th>Net</th><th>Km</th><th>Time</th></tr></thead><tbody>";
+  for(const r of results.slice(0,20)){
+    html+="<tr><td>"+r.path.map(m=>m.origin+"→"+m.destination+" ("+m.platform+")").join(" | ")+"</td><td><strong>"+r.totalNet.toFixed(2)+"€</strong></td><td>"+r.totalKm+"</td><td>"+formatDuration(r.totalMin)+"</td></tr>";
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+});
   const id=parseInt(document.getElementById("chainOrigin").value);
   const origin=missions.find(m=>m.id===id);
   if(!origin){return;}
@@ -348,6 +388,26 @@ document.getElementById("buildChainBtn").addEventListener("click",()=>{
   const el=document.getElementById("chainResults");
   if(!chains.length){el.innerHTML="<p class='muted'>No compatible chains found.</p>";return;}
   let html="<table><thead><tr><th>Outbound</th><th>Return/Intermediate</th><th>Net total</th><th>Km</th><th>Time</th></tr></thead><tbody>";
+  for(const c of chains){
+    html+="<tr><td>"+c.first.platform+" "+c.first.origin+"→"+c.first.destination+"</td><td>"+c.second.platform+" "+c.second.origin+"→"+c.second.destination+"</td><td><strong>"+c.totalNet.toFixed(2)+"€</strong></td><td>"+c.totalKm+"</td><td>"+formatDuration(c.totalMin)+"</td></tr>";
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+});
+document.getElementById("buildChainBtn").addEventListener("click",()=>{
+  const id=parseInt(document.getElementById("chainOrigin").value);
+  const origin=missions.find(m=>m.id===id);
+  if(!origin){return;}
+  const chains=[];
+  for(const m2 of missions){
+    if(m2.id===origin.id) continue;
+    if(m2.origin.toLowerCase()===origin.destination.toLowerCase()){
+      chains.push({first:origin,second:m2,totalNet:netProfit(origin)+netProfit(m2),totalKm:origin.distanceKm+m2.distanceKm,totalMin:origin.durationMin+m2.durationMin});
+    }
+  }
+  const el=document.getElementById("chainResults");
+  if(!chains.length){el.innerHTML="<p class='muted'>No compatible chains found.</p>";return;}
+  let html="<table><thead><tr><th>Outbound</th><th>Return/Intermediate</th><th>Total net</th><th>Km</th><th>Time</th></tr></thead><tbody>";
   for(const c of chains){
     html+="<tr><td>"+c.first.platform+" "+c.first.origin+"→"+c.first.destination+"</td><td>"+c.second.platform+" "+c.second.origin+"→"+c.second.destination+"</td><td><strong>"+c.totalNet.toFixed(2)+"€</strong></td><td>"+c.totalKm+"</td><td>"+formatDuration(c.totalMin)+"</td></tr>";
   }
