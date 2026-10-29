@@ -40,15 +40,27 @@ th{background:#f8fafc}
   nav { flex-wrap: wrap; }
   nav button { flex: 1 1 45%; }
 }
-</style>
+.hamburger{display:none;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#111827;}
+@media (max-width: 768px){
+  .hamburger{display:block;}
+  #mainNav{display:none;flex-direction:column;}
+  #mainNav.open{display:flex;}
+}
 </head>
 <body>
 <header>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div>
 <h1>OptiRoute BCN Pro</h1>
 <p>Vehicle transport missions in Barcelona · ONLOGIST · Otoqi · DriiveMe</p>
+</div>
+<button id="hamburger" class="hamburger" aria-label="Menu">☰</button>
+</div>
 </header>
-<nav>
-<button class="tab active" data-tab="dashboard">Dashboard</button>
+<nav id="mainNav">
+<button class="tab active" data-tab="about">About</button>
+<button class="tab" data-tab="instructions">Instructions</button>
+<button class="tab" data-tab="dashboard">Dashboard</button>
 <button class="tab" data-tab="missions">Missions</button>
 <button class="tab" data-tab="chain">Chain trips</button>
 <button class="tab" data-tab="add">Add mission</button>
@@ -58,7 +70,27 @@ th{background:#f8fafc}
 <button class="tab" data-tab="config">API config</button>
 </nav>
 <main>
-<section id="dashboard" class="tabcontent">
+<section id="about" class="tabcontent">
+<div class="card">
+<h2>About</h2>
+<p>OptiRoute BCN Pro helps vehicle transport freelancers manage missions, calculate net profit, chain trips and track daily operations.</p>
+<p>Developed in Barcelona by <a href="https://xarop.com" target="_blank">xarop.com</a>.</p>
+</div>
+</section>
+<section id="instructions" class="tabcontent hidden">
+<div class="card">
+<h2>Instructions</h2>
+<ol>
+<li>Add missions manually or import JSON offers.</li>
+<li>Filter by platform, destination, min net profit, max duration.</li>
+<li>Use Chain trips to combine missions.</li>
+<li>Use Route planner to find multi-leg routes.</li>
+<li>Track your day with the checklist.</li>
+<li>Configure API access in API config.</li>
+</ol>
+</div>
+</section>
+<section id="dashboard" class="tabcontent hidden">
 <div class="grid grid2">
 <div class="card"><div class="muted">Available missions</div><div class="kpi" id="kpiMissions">0</div></div>
 <div class="card"><div class="muted">Total net profit</div><div class="kpi" id="kpiNet">0 €</div></div>
@@ -318,6 +350,9 @@ function switchTab(name){
   document.getElementById(name).classList.remove("hidden");
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
 }
+document.getElementById("hamburger").addEventListener("click",()=>{
+  document.getElementById("mainNav").classList.toggle("open");
+});
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 document.getElementById("filterPlatform").addEventListener("change",renderAll);
 document.getElementById("filterDest").addEventListener("change",renderAll);
