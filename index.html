@@ -3,36 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Buscador de Rutas Reales - Otoqui / Driiveme / Onlogist</title>
+  <title>Real Route Finder - Otoqui / Driiveme / Onlogist</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 </head>
 <body>
   <header>
-    <h1>Buscador de Rutas Reales</h1>
-    <p>Plataformas: Otoqui, Driiveme y Onlogist · Rutas con varios viajes · Origen/destino por defecto: Barcelona · 1 día</p>
+    <h1>Real Route Finder</h1>
+    <p>Platforms: Otoqui, Driiveme and Onlogist · Multi-leg routes · Default origin/destination: Barcelona · 1 day</p>
   </header>
 
   <main>
     <section class="panel">
-      <h2>Configuración de ruta</h2>
+      <h2>Route configuration</h2>
       <div class="row">
-        <label>Origen inicial
+        <label>Initial origin
           <input id="origin" value="Barcelona" />
         </label>
-        <label>Destino final
+        <label>Final destination
           <input id="destination" value="Barcelona" />
         </label>
-        <label>Días totales
+        <label>Total days
           <input id="totalDays" type="number" min="1" value="1" />
         </label>
       </div>
 
       <div class="row">
-        <label>Paradas intermedias (separadas por coma)
+        <label>Intermediate stops (comma separated)
           <input id="stops" placeholder="Zaragoza, Madrid, Valencia, Tarragona" />
         </label>
-        <label>Plataformas
+        <label>Platforms
           <select id="providers" multiple>
             <option value="otoqui" selected>Otoqui</option>
             <option value="driiveme" selected>Driiveme</option>
@@ -42,27 +42,27 @@
       </div>
 
       <div class="actions">
-        <button id="searchBtn">Buscar rutas</button>
-        <button id="exampleBtn">Cargar ejemplo Barcelona→…→Barcelona</button>
-        <button id="clearBtn">Limpiar</button>
+        <button id="searchBtn">Search routes</button>
+        <button id="exampleBtn">Load example Barcelona→…→Barcelona</button>
+        <button id="clearBtn">Clear</button>
       </div>
-      <p class="hint">Consejo: puedes escribir paradas para crear una ruta con varios viajes. El cálculo usa distancias/tiempos reales por carretera (OSRM) y geocodificación (OpenStreetMap).</p>
+      <p class="hint">Tip: you can add stops to create a multi-leg route. Calculations use real road distances/times (OSRM) and geocoding (OpenStreetMap).</p>
     </section>
 
     <section class="panel">
-      <h2>Resultados</h2>
+      <h2>Results</h2>
       <div id="summary" class="summary"></div>
       <div id="results" class="results"></div>
     </section>
 
     <section class="panel">
-      <h2>Mapa</h2>
+      <h2>Map</h2>
       <div id="map"></div>
     </section>
   </main>
 
   <footer>
-    <p>Nota: las plataformas Otoqui/Driiveme/Onlogist son B2B y no exponen APIs públicas sin credenciales. Este proyecto incluye adaptadores (mock) que puedes sustituir por llamadas reales cuando tengas acceso.</p>
+    <p>Note: Otoqui/Driiveme/Onlogist are B2B platforms without public APIs. This project includes (mock) adapters you can replace with real calls when you have access. Developed by xarop.com</p>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

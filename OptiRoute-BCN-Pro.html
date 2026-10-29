@@ -38,56 +38,56 @@ th{background:#0f172a}
 <body>
 <header>
 <h1>OptiRoute BCN Pro</h1>
-<p>Misiones de transporte de vehiculos en Barcelona · ONLOGIST · Otoqi · DriiveMe</p>
+<p>Vehicle transport missions in Barcelona · ONLOGIST · Otoqi · DriiveMe</p>
 </header>
 <nav>
 <button class="tab active" data-tab="dashboard">Dashboard</button>
-<button class="tab" data-tab="missions">Misiones</button>
-<button class="tab" data-tab="chain">Encadenar viajes</button>
-<button class="tab" data-tab="add">Añadir mision</button>
-<button class="tab" data-tab="checklist">Checklist dia</button>
-<button class="tab" data-tab="links">Enlaces</button>
-<button class="tab" data-tab="providers">Proveedores</button>
-<button class="tab" data-tab="config">Config API</button>
+<button class="tab" data-tab="missions">Missions</button>
+<button class="tab" data-tab="chain">Chain trips</button>
+<button class="tab" data-tab="add">Add mission</button>
+<button class="tab" data-tab="checklist">Day checklist</button>
+<button class="tab" data-tab="links">Links</button>
+<button class="tab" data-tab="providers">Providers</button>
+<button class="tab" data-tab="config">API config</button>
 </nav>
 <main>
 <section id="dashboard" class="tabcontent">
 <div class="grid grid2">
-<div class="card"><div class="muted">Misiones disponibles</div><div class="kpi" id="kpiMissions">0</div></div>
-<div class="card"><div class="muted">Beneficio neto total</div><div class="kpi" id="kpiNet">0 €</div></div>
-<div class="card"><div class="muted">Km totales</div><div class="kpi" id="kpiKm">0</div></div>
-<div class="card"><div class="muted">Tiempo total</div><div class="kpi" id="kpiTime">0 h</div></div>
+<div class="card"><div class="muted">Available missions</div><div class="kpi" id="kpiMissions">0</div></div>
+<div class="card"><div class="muted">Total net profit</div><div class="kpi" id="kpiNet">0 €</div></div>
+<div class="card"><div class="muted">Total km</div><div class="kpi" id="kpiKm">0</div></div>
+<div class="card"><div class="muted">Total time</div><div class="kpi" id="kpiTime">0 h</div></div>
 </div>
 <div class="card">
-<h3>Filtros</h3>
+<h3>Filters</h3>
 <div class="row">
-<label>Plataforma<select id="filterPlatform"><option value="">Todas</option><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
-<label>Destino<select id="filterDest"><option value="">Todos</option></select></label>
-<label>Beneficio neto min (€)<input id="filterMinNet" type="number" value="0"></label>
-<label>Duracion max (min)<input id="filterMaxDur" type="number" value="9999"></label>
+<label>Platform<select id="filterPlatform"><option value="">All</option><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
+<label>Destination<select id="filterDest"><option value="">All</option></select></label>
+<label>Min net profit (€)<input id="filterMinNet" type="number" value="0"></label>
+<label>Max duration (min)<input id="filterMaxDur" type="number" value="9999"></label>
 </div>
 </div>
-<div class="card"><h3>Misiones filtradas</h3><div id="filteredTable"></div></div>
+<div class="card"><h3>Filtered missions</h3><div id="filteredTable"></div></div>
 </section>
 <section id="missions" class="tabcontent hidden">
-<div class="card"><h3>Base de datos de misiones BCN</h3><div id="missionsTable"></div></div>
+<div class="card"><h3>BCN mission database</h3><div id="missionsTable"></div></div>
 </section>
 <section id="chain" class="tabcontent hidden">
 <div class="card">
-<h3>Encadenador de ida y vuelta</h3>
-<p class="muted">Selecciona una mision de ida para encontrar vueltas/intermedias compatibles por destino.</p>
-<label>Mision de ida<select id="chainOrigin"></select></label>
-<button class="btn" id="buildChainBtn">Buscar cadenas</button>
+<h3>Round-trip chain builder</h3>
+<p class="muted">Select an outbound mission to find compatible return/intermediate legs by destination.</p>
+<label>Outbound mission<select id="chainOrigin"></select></label>
+<button class="btn" id="buildChainBtn">Build chains</button>
 <div id="chainResults" style="margin-top:1rem"></div>
 </div>
 </section>
 <section id="add" class="tabcontent hidden">
 <div class="card">
-<h3>Añadir mision en vivo</h3>
+<h3>Add live mission</h3>
 <div class="row">
-<label>Plataforma<select id="addPlatform"><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
-<label>Origen<input id="addOrigin" value="Barcelona El Prat T1"></label>
-<label>Destino<input id="addDest" value="Madrid Barajas"></label>
+<label>Platform<select id="addPlatform"><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
+<label>Origin<input id="addOrigin" value="Barcelona El Prat T1"></label>
+<label>Destination<input id="addDest" value="Madrid Barajas"></label>
 <label>Distancia km<input id="addKm" type="number" value="620"></label>
 <label>Duracion min<input id="addDur" type="number" value="390"></label>
 <label>Tarifa bruta €<input id="addGross" type="number" value="180"></label>
@@ -95,33 +95,33 @@ th{background:#0f172a}
 <label>Peajes €<input id="addTolls" type="number" value="38"></label>
 <label>Transito €<input id="addTransit" type="number" value="0"></label>
 <label>Prorrata autónomo €/dia<input id="addFee" type="number" value="0"></label>
-<label>Dias<input id="addDays" type="number" value="1"></label>
+<label>Days<input id="addDays" type="number" value="1"></label>
 <label>Reembolsable<input id="addReimb" type="checkbox"></label>
 </div>
-<button class="btn" id="addMissionBtn">Guardar mision</button>
+<button class="btn" id="addMissionBtn">Save mission</button>
 <div style="margin-top:1rem">
-<h4>Importar ofertas (JSON)</h4>
+<h4>Import offers (JSON)</h4>
 <textarea id="bulkJson" rows="6" placeholder='[{"platform":"ONLOGIST","origin":"...","destination":"...","distanceKm":100,"durationMin":60,"gross":50,"fuel":8,"tolls":5,"transit":0,"fee":0,"days":1,"reimb":false}]'></textarea>
-<button class="btn secondary" id="importJsonBtn">Importar</button>
+<button class="btn secondary" id="importJsonBtn">Import</button>
 </div>
 </div>
 </section>
 <section id="checklist" class="tabcontent hidden">
 <div class="card">
-<h3>Checklist del dia</h3>
+<h3>Day checklist</h3>
 <ul class="checklist" id="checklistItems"></ul>
 <div class="row">
-<label>Km iniciales<input id="startKm" type="number" value="0"></label>
-<label>Nivel combustible inicial<input id="startFuel" type="number" value="100"></label>
-<label>Firma digital<input id="signature" placeholder="Nombre del conductor"></label>
+<label>Initial km<input id="startKm" type="number" value="0"></label>
+<label>Initial fuel level<input id="startFuel" type="number" value="100"></label>
+<label>Digital signature<input id="signature" placeholder="Name del conductor"></label>
 </div>
-<button class="btn" id="saveChecklistBtn">Guardar estado</button>
+<button class="btn" id="saveChecklistBtn">Save state</button>
 <div id="checklistStatus" class="muted" style="margin-top:.5rem"></div>
 </div>
 </section>
 <section id="links" class="tabcontent hidden">
 <div class="card">
-<h3>Enlaces rapidos a plataformas</h3>
+<h3>Quick platform links</h3>
 <div class="row">
 <a class="btn" href="https://www.onlogist.com/" target="_blank">ONLOGIST Driver</a>
 <a class="btn" href="https://en.otoqi.com/" target="_blank">Otoqi</a>
@@ -131,24 +131,24 @@ th{background:#0f172a}
 </section>
 <section id="providers" class="tabcontent hidden">
 <div class="card">
-<h3>Gestión de proveedores</h3>
-<p class="muted">Añade o elimina plataformas (ONLOGIST, Otoqi, DriiveMe u otras).</p>
+<h3>Provider management</h3>
+<p class="muted">Add or remove platforms (ONLOGIST, Otoqi, DriiveMe or others).</p>
 <div class="row">
-<label>Nombre<input id="provName" placeholder="Nuevo proveedor"></label>
+<label>Name<input id="provName" placeholder="Nuevo proveedor"></label>
 <label>URL<input id="provUrl" placeholder="https://..."></label>
 </div>
-<button class="btn" id="addProvBtn">Añadir proveedor</button>
+<button class="btn" id="addProvBtn">Add provider</button>
 <div id="providersTable" style="margin-top:1rem"></div>
 </div>
 </section>
 <section id="config" class="tabcontent hidden">
 <div class="card">
-<h3>Configuración de APIs</h3>
+<h3>API configuration</h3>
 <p class="muted">Guarda endpoints y claves. Si un proveedor no ofrece API pública, usa la ingesta manual en "Añadir misión".</p>
 <div id="configForms"></div>
 </div>
 <div class="card">
-<h3>Cómo obtener credenciales</h3>
+<h3>How to get credentials</h3>
 <ul>
 <li><strong>ONLOGIST:</strong> plataforma B2B. Solicita acceso API en su portal de desarrolladores / soporte (dev.portal.onlogist.com). Requiere cuenta de empresa.</li>
 <li><strong>Otoqi:</strong> plataforma B2B. Contacta con Otoqi para integración API (no hay registro self-serve público).</li>
@@ -224,8 +224,8 @@ function applyFilters(){
 }
 function renderTable(containerId,list){
   const el=document.getElementById(containerId);
-  if(!list.length){el.innerHTML="<p class='muted'>Sin resultados</p>";return;}
-  let html="<table><thead><tr><th>Plat</th><th>Origen</th><th>Destino</th><th>km</th><th>Tiempo</th><th>Bruto</th><th>Neto</th></tr></thead><tbody>";
+  if(!list.length){el.innerHTML="<p class='muted'>No results</p>";return;}
+  let html="<table><thead><tr><th>Plat</th><th>Origin</th><th>Destination</th><th>km</th><th>Time</th><th>Gross</th><th>Net</th></tr></thead><tbody>";
   for(const m of list){
     html+="<tr><td><span class='badge'>"+m.platform+"</span></td><td>"+m.origin+"</td><td>"+m.destination+"</td><td>"+m.distanceKm+"</td><td>"+formatDuration(m.durationMin)+"</td><td>"+m.gross+"€</td><td><strong>"+netProfit(m)+"€</strong></td></tr>";
   }
@@ -235,13 +235,13 @@ function renderTable(containerId,list){
 function populateDestFilter(){
   const sel=document.getElementById("filterDest");
   const dests=[...new Set(missions.map(m=>m.destination))];
-  sel.innerHTML="<option value=''>Todos</option>"+dests.map(d=>"<option>"+d+"</option>").join("");
+  sel.innerHTML="<option value=''>All</option>"+dests.map(d=>"<option>"+d+"</option>").join("");
 }
 function populatePlatformSelects(){
   const names = providers.map(p=>p.name);
   const filterSel = document.getElementById("filterPlatform");
   const currentFilter = filterSel.value;
-  filterSel.innerHTML = "<option value=''>Todas</option>" + names.map(n=>"<option>"+n+"</option>").join("");
+  filterSel.innerHTML = "<option value=''>All</option>" + names.map(n=>"<option>"+n+"</option>").join("");
   if(names.includes(currentFilter)) filterSel.value=currentFilter;
   const addSel = document.getElementById("addPlatform");
   const currentAdd = addSel.value;
@@ -250,10 +250,10 @@ function populatePlatformSelects(){
 }
 function renderProviders(){
   const el=document.getElementById("providersTable");
-  if(!providers.length){el.innerHTML="<p class='muted'>Sin proveedores</p>";return;}
-  let html="<table><thead><tr><th>Nombre</th><th>URL</th><th></th></tr></thead><tbody>";
+  if(!providers.length){el.innerHTML="<p class='muted'>No providers</p>";return;}
+  let html="<table><thead><tr><th>Name</th><th>URL</th><th></th></tr></thead><tbody>";
   for(const p of providers){
-    html+="<tr><td>"+p.name+"</td><td><a href='"+p.url+"' target='_blank'>"+p.url+"</a></td><td><button class='btn danger' data-del='"+p.name+"'>Eliminar</button></td></tr>";
+    html+="<tr><td>"+p.name+"</td><td><a href='"+p.url+"' target='_blank'>"+p.url+"</a></td><td><button class='btn danger' data-del='"+p.name+"'>Delete</button></td></tr>";
   }
   html+="</tbody></table>";
   el.innerHTML=html;
@@ -268,7 +268,7 @@ function renderConfigForms(){
   let html="";
   for(const p of providers){
     const c=apiConfig[p.name]||{baseUrl:"",apiKey:"",enabled:false};
-    html+="<div class='card'><h4>"+p.name+"</h4><div class='row'><label>Base URL<input data-prov='"+p.name+"' class='cfg-url' value='"+(c.baseUrl||"")+"'></label><label>API Key<input data-prov='"+p.name+"' class='cfg-key' value='"+(c.apiKey||"")+"'></label><label>Activo<input data-prov='"+p.name+"' class='cfg-enabled' type='checkbox' "+(c.enabled?"checked":"")+"></label></div><button class='btn cfg-save' data-prov='"+p.name+"'>Guardar</button></div>";
+    html+="<div class='card'><h4>"+p.name+"</h4><div class='row'><label>Base URL<input data-prov='"+p.name+"' class='cfg-url' value='"+(c.baseUrl||"")+"'></label><label>API Key<input data-prov='"+p.name+"' class='cfg-key' value='"+(c.apiKey||"")+"'></label><label>Active<input data-prov='"+p.name+"' class='cfg-enabled' type='checkbox' "+(c.enabled?"checked":"")+"></label></div><button class='btn cfg-save' data-prov='"+p.name+"'>Guardar</button></div>";
   }
   el.innerHTML=html;
   el.querySelectorAll(".cfg-save").forEach(btn=>{
@@ -279,7 +279,7 @@ function renderConfigForms(){
       const enabled=el.querySelector(".cfg-enabled[data-prov='"+name+"']").checked;
       apiConfig[name]={baseUrl:url,apiKey:key,enabled};
       saveApiConfig(apiConfig);
-      alert("Config guardada para "+name);
+      alert("Config saved for "+name);
     });
   });
 }
@@ -324,15 +324,15 @@ document.getElementById("addMissionBtn").addEventListener("click",()=>{
   missions.push(m);
   saveMissions();
   renderAll();
-  alert("Mision guardada");
+  alert("Mission saved");
 });
 document.getElementById("importJsonBtn").addEventListener("click",()=>{
   try{
     const arr=JSON.parse(document.getElementById("bulkJson").value);
-    if(!Array.isArray(arr)) throw new Error("Debe ser un array");
+    if(!Array.isArray(arr)) throw new Error("Must be an array");
     for(const m of arr){ m.id=m.id||Date.now()+Math.random(); missions.push(m); }
-    saveMissions(); renderAll(); alert("Importadas "+arr.length+" misiones");
-  }catch(e){ alert("Error JSON: "+e.message); }
+    saveMissions(); renderAll(); alert("Imported "+arr.length+" missions");
+  }catch(e){ alert("JSON error: "+e.message); }
 });
 document.getElementById("buildChainBtn").addEventListener("click",()=>{
   const id=parseInt(document.getElementById("chainOrigin").value);
@@ -346,8 +346,8 @@ document.getElementById("buildChainBtn").addEventListener("click",()=>{
     }
   }
   const el=document.getElementById("chainResults");
-  if(!chains.length){el.innerHTML="<p class='muted'>No se encontraron cadenas compatibles.</p>";return;}
-  let html="<table><thead><tr><th>Ida</th><th>Vuelta/Intermedia</th><th>Neto total</th><th>Km</th><th>Tiempo</th></tr></thead><tbody>";
+  if(!chains.length){el.innerHTML="<p class='muted'>No compatible chains found.</p>";return;}
+  let html="<table><thead><tr><th>Outbound</th><th>Return/Intermediate</th><th>Net total</th><th>Km</th><th>Time</th></tr></thead><tbody>";
   for(const c of chains){
     html+="<tr><td>"+c.first.platform+" "+c.first.origin+"→"+c.first.destination+"</td><td>"+c.second.platform+" "+c.second.origin+"→"+c.second.destination+"</td><td><strong>"+c.totalNet.toFixed(2)+"€</strong></td><td>"+c.totalKm+"</td><td>"+formatDuration(c.totalMin)+"</td></tr>";
   }
@@ -355,12 +355,12 @@ document.getElementById("buildChainBtn").addEventListener("click",()=>{
   el.innerHTML=html;
 });
 const checklistItems=[
- "Fotos de estado inicial del vehiculo",
- "Km iniciales registrados",
- "Nivel de combustible inicial",
- "Documentacion entregada",
- "Firma digital del cliente",
- "Fotos de entrega final"
+ "Initial vehicle condition photos",
+ "Initial km registrados",
+ "Initial fuel level",
+ "Documentation delivered",
+ "Digital signature del cliente",
+ "Final delivery photos"
 ];
 function renderChecklist(){
   const ul=document.getElementById("checklistItems");
@@ -383,12 +383,12 @@ document.getElementById("saveChecklistBtn").addEventListener("click",()=>{
   checklistState.startFuel=parseFloat(document.getElementById("startFuel").value)||0;
   checklistState.signature=document.getElementById("signature").value;
   saveChecklist();
-  document.getElementById("checklistStatus").textContent="Estado guardado: "+new Date().toLocaleString();
+  document.getElementById("checklistStatus").textContent="State saved: "+new Date().toLocaleString();
 });
 document.getElementById("addProvBtn").addEventListener("click",()=>{
   const name=document.getElementById("provName").value.trim();
   const url=document.getElementById("provUrl").value.trim()||"#";
-  if(!name){alert("Nombre requerido");return;}
+  if(!name){alert("Name required");return;}
   providers.push({name,url});
   saveProviders();
   document.getElementById("provName").value="";
@@ -406,5 +406,6 @@ document.getElementById("providersTable").addEventListener("click",(e)=>{
 renderChecklist();
 renderAll();
 </script>
+<footer style="text-align:center;padding:1rem;color:#94a3b8;font-size:.8rem;">Developed by xarop.com</footer>
 </body>
 </html>

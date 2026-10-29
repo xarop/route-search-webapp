@@ -37,7 +37,7 @@ async function routeBetween(a, b) {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Routing failed");
   const data = await res.json();
-  if (!data.routes || !data.routes.length) throw new Error("Sin ruta entre " + a.name + " y " + b.name);
+  if (!data.routes || !data.routes.length) throw new Error("No route between " + a.name + " y " + b.name);
   const r = data.routes[0];
   return { distanceKm: r.distance / 1000, durationMin: r.duration / 60, geometry: r.geometry };
 }
@@ -85,11 +85,11 @@ function platformUrl(provider) {
   }
 }
 async function search() {
-  els.summary.textContent = "Buscando rutas reales por carretera...";
+  els.summary.textContent = "Searching real road routes...";
   els.results.innerHTML = "";
   const providers = selectedProviders();
   if (!providers.length) {
-    els.summary.textContent = "Selecciona al menos una plataforma.";
+    els.summary.textContent = "Select at least one platform.";
     return;
   }
   const stopNames = buildStopsList();
@@ -106,7 +106,7 @@ async function search() {
       const r = await routeBetween(places[i], places[i + 1]);
       legs.push({ from: places[i], to: places[i + 1], ...r });
     } catch (e) {
-      els.summary.textContent = "Error de routing: " + e.message;
+      els.summary.textContent = "Routing error: " + e.message;
       return;
     }
   }
@@ -122,10 +122,10 @@ async function search() {
   const totalMin = legs.reduce((s, l) => s + l.durationMin, 0);
   const totalPrice = allOffers.reduce((s, o) => s + o.price, 0);
   els.summary.innerHTML =
-    "<strong>Ruta:</strong> " + places.map((p) => p.name).join(" -> ") + "<br/>" +
-    "<strong>Viajes:</strong> " + legs.length + " &middot; <strong>Distancia total:</strong> " + totalKm.toFixed(1) + " km &middot; " +
-    "<strong>Tiempo estimado:</strong> " + formatDuration(totalMin) + " &middot; " +
-    "<strong>Coste total estimado:</strong> " + totalPrice.toFixed(2) + " EUR (" + allOffers.length + " ofertas)";
+    "<strong>Route:</strong> " + places.map((p) => p.name).join(" -> ") + "<br/>" +
+    "<strong>Trips:</strong> " + legs.length + " &middot; <strong>Total distance:</strong> " + totalKm.toFixed(1) + " km &middot; " +
+    "<strong>Estimated time:</strong> " + formatDuration(totalMin) + " &middot; " +
+    "<strong>Estimated total cost:</strong> " + totalPrice.toFixed(2) + " EUR (" + allOffers.length + " offers)";
   const table = document.createElement("table");
   table.innerHTML = "<thead><tr><th>Plataforma</th><th>Origen</th><th>Destino</th><th>km</th><th>Tiempo</th><th>Dias</th><th>Precio (EUR)</th><th>Enlace</th></tr></thead><tbody></tbody>";
   const tbody = table.querySelector("tbody");
@@ -139,7 +139,7 @@ async function search() {
       "<td>" + formatDuration(o.durationMin) + "</td>" +
       "<td>" + o.days + "</td>" +
       "<td>" + o.price.toFixed(2) + "</td>" +
-      "<td><a href=\"" + o.url + "\" target=\"_blank\" rel=\"noopener\">Abrir</a></td>";
+      "<td><a href=\"" + o.url + "\" target=\"_blank\" rel=\"noopener\">Open</a></td>";
     tbody.appendChild(tr);
   }
   const tr = document.createElement("tr");

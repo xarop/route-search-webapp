@@ -1,22 +1,25 @@
-# OptiRoute / Buscador de Rutas Reales
+# OptiRoute / Real Route Finder
 
-Proyecto con dos aplicaciones:
+Project with two applications:
 
-1. `index.html` + `app.js` + `styles.css`: buscador de rutas multi-tramo entre ciudades usando distancias/tiempos reales (OSRM + OpenStreetMap), con plataformas Otoqui, Driiveme y Onlogist.
-2. `OptiRoute-BCN-Pro.html`: aplicación de un solo archivo para transportistas de vehículos en Barcelona (misiones, beneficio neto, encadenado de viajes, checklist y proveedores extensibles).
+1. `index.html` + `app.js` + `styles.css`: multi-leg route finder between cities using real road distances/times (OSRM + OpenStreetMap), with platforms Otoqui, Driiveme and Onlogist.
+2. `OptiRoute-BCN-Pro.html`: single-file app for vehicle transport drivers in Barcelona (missions, net profit, trip chaining, checklist and extensible providers).
 
-## Ejecutar en local
-Desde la carpeta del proyecto:
+## Run locally
+From the project folder:
 
 ```bash
 cd "/Users/xarop/Local Sites/route-search-webapp"
 python3 -m http.server 8000
 ```
 
-Luego abre en el navegador:
+Then open in your browser:
 - http://localhost:8000/
 - http://localhost:8000/OptiRoute-BCN-Pro.html
 
-## Notas
-- Las plataformas son B2B; los precios de `OptiRoute-BCN-Pro.html` son estimaciones editables.
-- Los proveedores se pueden añadir/eliminar desde la pestaña "Proveedores".
+## Notes
+- Platforms are B2B; prices in `OptiRoute-BCN-Pro.html` are editable estimates.
+- Providers can be added/removed from the "Providers" tab.
+
+## Developed by xarop.com
+https://xarop.com
