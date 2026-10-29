@@ -99,6 +99,11 @@ th{background:#0f172a}
 <label>Reembolsable<input id="addReimb" type="checkbox"></label>
 </div>
 <button class="btn" id="addMissionBtn">Guardar mision</button>
+<div style="margin-top:1rem">
+<h4>Importar ofertas (JSON)</h4>
+<textarea id="bulkJson" rows="6" placeholder='[{"platform":"ONLOGIST","origin":"...","destination":"...","distanceKm":100,"durationMin":60,"gross":50,"fuel":8,"tolls":5,"transit":0,"fee":0,"days":1,"reimb":false}]'></textarea>
+<button class="btn secondary" id="importJsonBtn">Importar</button>
+</div>
 </div>
 </section>
 <section id="checklist" class="tabcontent hidden">
@@ -320,6 +325,14 @@ document.getElementById("addMissionBtn").addEventListener("click",()=>{
   saveMissions();
   renderAll();
   alert("Mision guardada");
+});
+document.getElementById("importJsonBtn").addEventListener("click",()=>{
+  try{
+    const arr=JSON.parse(document.getElementById("bulkJson").value);
+    if(!Array.isArray(arr)) throw new Error("Debe ser un array");
+    for(const m of arr){ m.id=m.id||Date.now()+Math.random(); missions.push(m); }
+    saveMissions(); renderAll(); alert("Importadas "+arr.length+" misiones");
+  }catch(e){ alert("Error JSON: "+e.message); }
 });
 document.getElementById("buildChainBtn").addEventListener("click",()=>{
   const id=parseInt(document.getElementById("chainOrigin").value);
