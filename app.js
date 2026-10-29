@@ -25,12 +25,13 @@ function initMap() {
   L.tileLayer(tileUrl, { attribution: "OSM" }).addTo(map);
 }
 async function geocode(place) {
-  const url = NOMINATIM + "?format=json&limit=1&q=" + encodeURIComponent(place);
-  const res = await fetch(url, { headers: { "Accept-Language": "es" } });
+  const url = "https://photon.komoot.io/api/?q=" + encodeURIComponent(place) + "&limit=1";
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Geocoding failed: " + place);
   const data = await res.json();
-  if (!data.length) throw new Error("No se encontro la ubicacion: " + place);
-  return { name: place, lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  if (!data.features || !data.features.length) throw new Error("Location not found: " + place);
+  const f = data.features[0];
+  return { name: place, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
 }
 async function routeBetween(a, b) {
   const url = OSRM + "/" + a.lon + "," + a.lat + ";" + b.lon + "," + b.lat + "?overview=full&geometries=geojson";
@@ -95,7 +96,11 @@ async function search() {
   const stopNames = buildStopsList();
   let places;
   try {
-    places = await Promise.all(stopNames.map(geocode));
+    places = [];
+    for (const name of stopNames) {
+      places.push(await geocode(name));
+      await new Promise((r) => setTimeout(r, 300));
+    }
   } catch (e) {
     els.summary.textContent = "Error de geocodificacion: " + e.message;
     return;
