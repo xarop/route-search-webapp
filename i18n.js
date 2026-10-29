@@ -46,7 +46,10 @@ const translations = {
     kpi_inspections: "Check-in & Handovers",
     kpi_breaks_transit: "Breaks & Transit",
     kpi_total_shift: "Total Workday",
-    kpi_net_hourly: "Net Hourly Rate"
+    kpi_net_hourly: "Net Hourly Rate",
+    kpi_hotel: "Accommodation / Hotel",
+    tab_1day_loop: "1-Day Feasible Route",
+    tab_multiday_loop: "Multi-Day Circuit (+ Hotel)"
   },
   ca: {
     app_title: "Cercador de Rutes Reals",
@@ -94,7 +97,10 @@ const translations = {
     kpi_inspections: "Inspeccions i lliuraments",
     kpi_breaks_transit: "Descansos i trasllats",
     kpi_total_shift: "Jornada total estimada",
-    kpi_net_hourly: "Rendiment net / hora"
+    kpi_net_hourly: "Rendiment net / hora",
+    kpi_hotel: "Allotjament / Pernoctació",
+    tab_1day_loop: "Ruta viable 1 dia",
+    tab_multiday_loop: "Circuit 2+ dies (+ Hotel)"
   },
   es: {
     app_title: "Buscador de Rutas Reales",
@@ -142,7 +148,10 @@ const translations = {
     kpi_inspections: "Inspecciones y entregas",
     kpi_breaks_transit: "Descansos y traslados",
     kpi_total_shift: "Jornada total estimada",
-    kpi_net_hourly: "Rendimiento neto / hora"
+    kpi_net_hourly: "Rendimiento neto / hora",
+    kpi_hotel: "Alojamiento / Pernoctación",
+    tab_1day_loop: "Ruta viable 1 día",
+    tab_multiday_loop: "Circuito 2+ días (+ Hotel)"
   },
   fr: {
     app_title: "Recherche d'Itinéraires Réels",

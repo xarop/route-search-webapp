@@ -125,30 +125,40 @@ function initMap() {
 }
 
 // ==========================================================================
-// Geocoding via Photon OSM with Caching
+// Geocoding via Photon OSM with European Bias & City Preference
 // ==========================================================================
 async function geocode(place) {
   const trimmed = place.trim();
-  if (geocodeCache.has(trimmed.toLowerCase())) {
-    return geocodeCache.get(trimmed.toLowerCase());
+  const cacheKey = trimmed.toLowerCase();
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey);
   }
 
-  const url = `${PHOTON_GEOCODE}?q=${encodeURIComponent(trimmed)}&limit=1`;
+  // Lat/lon bias set to Barcelona (41.38, 2.17) to prioritize Spain/Western Europe
+  const url = `${PHOTON_GEOCODE}?q=${encodeURIComponent(trimmed)}&lat=41.38&lon=2.17&limit=10`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Geocoding failed for: ${trimmed}`);
   const data = await res.json();
   if (!data.features || !data.features.length) {
     throw new Error(`Location not found: "${trimmed}"`);
   }
-  const f = data.features[0];
-  const displayName = f.properties.name + (f.properties.city ? `, ${f.properties.city}` : (f.properties.state ? `, ${f.properties.state}` : ""));
+
+  // Prioritize Spanish/European cities and towns over homonyms in South America/US
+  const cityMatch = data.features.find(f => 
+    (f.properties.country === "España" || f.properties.countrycode === "ES") &&
+    (f.properties.osm_value === "city" || f.properties.osm_value === "town" || f.properties.osm_key === "place" || f.properties.type === "city")
+  );
+  const esMatch = data.features.find(f => f.properties.country === "España" || f.properties.countrycode === "ES");
+  const f = cityMatch || esMatch || data.features[0];
+
+  const displayName = f.properties.name + (f.properties.city ? `, ${f.properties.city}` : (f.properties.state ? `, ${f.properties.state}` : (f.properties.country ? `, ${f.properties.country}` : "")));
   const result = {
     name: trimmed,
     fullName: displayName,
     lat: f.geometry.coordinates[1],
     lon: f.geometry.coordinates[0]
   };
-  geocodeCache.set(trimmed.toLowerCase(), result);
+  geocodeCache.set(cacheKey, result);
   return result;
 }
 
@@ -212,7 +222,7 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
             durationMin: m.durationMin || durationMin,
             payout: m.payout || m.price || 0,
             vehicle: m.vehicleModel || "Assigned Fleet Vehicle",
-            missionId: m.id || `LIVE-${provider.toUpperCase()}-${Math.floor(Math.random()*9000+1000)}`,
+            missionId: m.id || `${provider.slice(0, 3).toUpperCase()}-${Math.floor(Math.random()*9000+1000)}`,
             appUrl: m.url || prof.appUrl,
             deepLink: prof.mobileDeepLink,
             isLive: true
@@ -255,37 +265,53 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
 }
 
 // ==========================================================================
-// Realistic Operational Metrics Calculator
+// Realistic Operational Metrics & Shift Constraints
 // ==========================================================================
-function calculateRealisticMetrics(legs, missions, totalDays) {
+function calculateRealisticMetrics(legs, missions, userSpecifiedDays, isMultiDayAlternative = false) {
   const drivingKm = legs.reduce((acc, l) => acc + l.distanceKm, 0);
   const drivingMin = legs.reduce((acc, l) => acc + l.durationMin, 0);
 
-  // Each mission leg requires vehicle check-in (25m) + delivery handover & CMR (20m) = 45m
+  // Inspections: 25 min check-in + 20 min handover per mission = 45 min
   const missionsCount = missions.filter(m => m.provider !== 'osrm').length || legs.length;
   const inspectionMin = missionsCount * 45;
 
-  // Transit/transfer time to reach next vehicle pick-up in the same city/terminal
+  // Inter-mission city transit: 35 min
   const transitMin = Math.max(0, (missionsCount - 1) * 35);
 
-  // Mandatory EU driving breaks: 45m break every 4.5h of driving
+  // Mandatory EU driving breaks (45 min break after 4.5h driving)
   let breakMin = 0;
   if (drivingMin > 270) breakMin += 45;
   if (drivingMin > 510) breakMin += 45;
 
-  // Total realistic shift time
+  // Total workday shift in minutes
   const totalShiftMin = Math.round(drivingMin + inspectionMin + transitMin + breakMin);
+
+  // Calculate required days:
+  // If user says 1 day, maximum acceptable shift for 1 single day is 15h (900 min)
+  let effectiveDays = userSpecifiedDays;
+  if (isMultiDayAlternative) {
+    // Spread across 2 or more days so that daily driving does not exceed 8-9h
+    effectiveDays = Math.max(2, Math.ceil(totalShiftMin / (9 * 60)));
+  }
+
+  // Accommodation / Hotel cost: 65 € per night when trip spans more than 1 day
+  const hotelNights = Math.max(0, effectiveDays - 1);
+  const hotelCost = hotelNights * 65.00;
 
   // Financials
   const grossPayout = missions.reduce((acc, m) => acc + (m.payout || 0), 0);
   const estFuelTolls = drivingKm * 0.085;
-  const netProfit = Math.max(0, grossPayout - estFuelTolls);
+  const netProfit = Math.max(0, grossPayout - estFuelTolls - hotelCost);
   const hourlyNet = totalShiftMin > 0 ? (netProfit / (totalShiftMin / 60)) : 0;
 
-  // Legal & physiological daily limits (650 km / day and 10.5h shift / day)
-  const maxAllowedKm = totalDays * 650;
-  const maxAllowedShiftMin = totalDays * 630; // 10.5h
-  const isFeasible = (drivingKm <= maxAllowedKm) && (totalShiftMin <= maxAllowedShiftMin);
+  // Feasibility criteria:
+  // For 1 day: STRICT MAX 15h (900 min) and MAX ~850 km
+  let isFeasible = false;
+  if (effectiveDays === 1) {
+    isFeasible = (totalShiftMin <= 15 * 60) && (drivingKm <= 850);
+  } else {
+    isFeasible = (totalShiftMin <= effectiveDays * 11 * 60) && (drivingKm <= effectiveDays * 650);
+  }
 
   return {
     drivingKm,
@@ -296,18 +322,20 @@ function calculateRealisticMetrics(legs, missions, totalDays) {
     totalShiftMin,
     grossPayout,
     estFuelTolls,
+    hotelNights,
+    hotelCost,
     netProfit,
     hourlyNet,
+    effectiveDays,
     isFeasible,
-    maxAllowedKm,
-    maxAllowedShiftMin
+    isMultiDayAlternative
   };
 }
 
 // ==========================================================================
 // Candidate Sequence Evaluator
 // ==========================================================================
-async function evaluateStopSequence(places, selectedProviders, strategy, totalDays) {
+async function evaluateStopSequence(places, selectedProviders, strategy, totalDays, isMultiDay = false) {
   const legs = [];
   const chosenMissions = [];
 
@@ -353,7 +381,7 @@ async function evaluateStopSequence(places, selectedProviders, strategy, totalDa
         durationMin: road.durationMin,
         payout: 0,
         vehicle: "Personal / Public Transit",
-        missionId: "ROAD-TRANSIT",
+        missionId: "TRANSIT",
         appUrl: "#",
         deepLink: "#",
         isLive: false
@@ -361,95 +389,121 @@ async function evaluateStopSequence(places, selectedProviders, strategy, totalDa
     }
   }
 
-  const metrics = calculateRealisticMetrics(legs, chosenMissions, totalDays);
+  const metrics = calculateRealisticMetrics(legs, chosenMissions, totalDays, isMultiDay);
   return { places, legs, missions: chosenMissions, metrics };
 }
 
 // ==========================================================================
-// Smart Route Generator with Orientation Stops & Daily Limits
+// Smart Route Generator with 1-Day Shortening & Multi-Day Alternatives
 // ==========================================================================
 async function generateSmartRouteOptions(originPlace, destPlace, candidateStops, selectedProviders, strategy, totalDays) {
   const isLoop = originPlace.name.toLowerCase() === destPlace.name.toLowerCase();
-  const options = [];
+  const options1Day = [];
+  const optionsMultiDay = [];
 
   // Generate sub-route candidate paths
-  const candidatePaths = [];
+  const candidatePaths1Day = [];
+  const candidatePathsMulti = [];
 
   if (candidateStops.length === 0) {
     if (!isLoop) {
-      candidatePaths.push([originPlace, destPlace]);
+      candidatePaths1Day.push([originPlace, destPlace]);
     } else {
-      // Default corridor if loop without stops
       const defaultStop = await geocode("Tarragona");
-      candidatePaths.push([originPlace, defaultStop, destPlace]);
+      candidatePaths1Day.push([originPlace, defaultStop, destPlace]);
     }
   } else if (candidateStops.length === 1) {
-    candidatePaths.push([originPlace, candidateStops[0], destPlace]);
+    candidatePaths1Day.push([originPlace, candidateStops[0], destPlace]);
   } else {
-    // When intermediate stops are provided, evaluate them as orientation areas
-    // A. Two-stop loops
+    // Multiple stops:
+    // 1. Single-stop corridors (always tested for 1-day feasibility)
+    for (let i = 0; i < candidateStops.length; i++) {
+      candidatePaths1Day.push([originPlace, candidateStops[i], destPlace]);
+    }
+
+    // 2. Two-stop loops
     for (let i = 0; i < candidateStops.length; i++) {
       for (let j = 0; j < candidateStops.length; j++) {
         if (i !== j) {
-          candidatePaths.push([originPlace, candidateStops[i], candidateStops[j], destPlace]);
+          candidatePaths1Day.push([originPlace, candidateStops[i], candidateStops[j], destPlace]);
         }
       }
     }
 
-    // B. Single-stop corridors
-    for (let i = 0; i < candidateStops.length; i++) {
-      candidatePaths.push([originPlace, candidateStops[i], destPlace]);
-    }
-
-    // C. If user selected multi-days (2+ days), allow 3 or all candidate stops in chain
-    if (totalDays >= 2) {
-      candidatePaths.push([originPlace, ...candidateStops, destPlace]);
-    }
+    // 3. Full candidate circuit (if > 1 stop, always evaluate as a multi-day option with hotel!)
+    candidatePathsMulti.push([originPlace, ...candidateStops, destPlace]);
   }
 
-  // Deduplicate paths
-  const seenPathKeys = new Set();
-  const uniquePaths = [];
-  for (const path of candidatePaths) {
+  // Deduplicate 1-day candidate paths
+  const seenKeys = new Set();
+  const uniquePaths1Day = [];
+  for (const path of candidatePaths1Day) {
     const key = path.map(p => p.name).join("->");
-    if (!seenPathKeys.has(key)) {
-      seenPathKeys.add(key);
-      uniquePaths.push(path);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniquePaths1Day.push(path);
     }
   }
 
-  // Evaluate candidate paths
-  for (const path of uniquePaths.slice(0, 12)) {
+  // Evaluate 1-day candidate paths
+  for (const path of uniquePaths1Day.slice(0, 10)) {
     try {
-      const evaluated = await evaluateStopSequence(path, selectedProviders, strategy, totalDays);
-      options.push(evaluated);
+      const evaluated = await evaluateStopSequence(path, selectedProviders, strategy, totalDays, false);
+      if (evaluated.metrics.isFeasible) {
+        options1Day.push(evaluated);
+      } else if (totalDays === 1) {
+        // If it exceeded 15h, also evaluate as multi-day alternative
+        const multiEval = await evaluateStopSequence(path, selectedProviders, strategy, totalDays, true);
+        optionsMultiDay.push(multiEval);
+      }
     } catch (e) {
-      console.warn("Could not evaluate path:", e.message);
+      console.warn("Path evaluation error:", e.message);
     }
   }
 
-  if (options.length === 0) {
-    throw new Error("Could not compute valid road legs between the specified points.");
+  // Evaluate multi-day candidate circuits (e.g. all stops with hotel)
+  for (const path of candidatePathsMulti) {
+    try {
+      const multiEval = await evaluateStopSequence(path, selectedProviders, strategy, totalDays, true);
+      optionsMultiDay.push(multiEval);
+    } catch (e) {
+      console.warn("Multi-day path error:", e.message);
+    }
   }
 
-  // Sort candidate options
-  options.sort((a, b) => {
-    // 1. Feasible options first
-    if (a.metrics.isFeasible && !b.metrics.isFeasible) return -1;
-    if (!a.metrics.isFeasible && b.metrics.isFeasible) return 1;
+  // Sort 1-day options by net profit and hourly efficiency
+  options1Day.sort((a, b) => (b.metrics.netProfit * 1.4 + b.metrics.hourlyNet * 8) - (a.metrics.netProfit * 1.4 + a.metrics.hourlyNet * 8));
 
-    // 2. Score by driver strategy
-    if (strategy === "profit") {
-      // Balance net profit and hourly efficiency
-      return (b.metrics.netProfit * 1.5 + b.metrics.hourlyNet * 8) - (a.metrics.netProfit * 1.5 + a.metrics.hourlyNet * 8);
-    } else if (strategy === "fastest") {
-      return a.metrics.totalShiftMin - b.metrics.totalShiftMin;
-    } else {
-      return a.metrics.estFuelTolls - b.metrics.estFuelTolls;
-    }
-  });
+  // Sort multi-day options
+  optionsMultiDay.sort((a, b) => b.metrics.netProfit - a.metrics.netProfit);
 
-  return options;
+  // Combine results:
+  // Option 1: Top 1-day feasible route (under 15h, realistic)
+  // Option 2: Multi-day route with hotel (if exists) or secondary 1-day route
+  // Option 3: Additional alternative
+  const finalOptions = [];
+  if (options1Day.length > 0) {
+    finalOptions.push(options1Day[0]);
+  }
+
+  if (optionsMultiDay.length > 0) {
+    finalOptions.push(optionsMultiDay[0]);
+  }
+
+  if (options1Day.length > 1) {
+    finalOptions.push(options1Day[1]);
+  } else if (optionsMultiDay.length > 1 && finalOptions.length < 3) {
+    finalOptions.push(optionsMultiDay[1]);
+  }
+
+  if (finalOptions.length === 0) {
+    // Fallback if everything was too tight
+    const fallbackPath = [originPlace, destPlace];
+    const fallback = await evaluateStopSequence(fallbackPath, selectedProviders, strategy, totalDays, false);
+    finalOptions.push(fallback);
+  }
+
+  return finalOptions;
 }
 
 // ==========================================================================
@@ -497,7 +551,7 @@ async function search() {
       if (s.toLowerCase() !== originName.toLowerCase() && s.toLowerCase() !== destName.toLowerCase()) {
         try {
           candidateStops.push(await geocode(s));
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(r => setTimeout(r, 80));
         } catch (e) {
           console.warn(`Stop ${s} ignored:`, e.message);
         }
@@ -523,18 +577,24 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
   const opt = currentComputedOptions[activeOptionIndex];
   const { places, legs, missions, metrics } = opt;
 
-  // 1. Alternative Route Tabs if multiple feasible options exist
+  // 1. Alternative Route Tabs (1-Day Loop vs Multi-Day with Hotel)
   let altsHtml = "";
   if (currentComputedOptions.length > 1) {
     altsHtml = `
       <div class="route-alternatives-bar">
         ${currentComputedOptions.slice(0, 3).map((candidate, idx) => {
           const isActive = idx === activeOptionIndex;
-          const stopNames = candidate.places.map(p => p.name).join(" → ");
-          const label = idx === 0 ? "Option 1 (Recommended Loop)" : `Option ${idx + 1}`;
+          const isMulti = candidate.metrics.isMultiDayAlternative;
+          let label = "";
+          if (!isMulti) {
+            label = idx === 0 ? "Option 1 (1-Day Feasible Loop)" : `Option ${idx + 1} (1-Day)`;
+          } else {
+            label = `Option ${idx + 1} (${candidate.metrics.effectiveDays} Days + Hotel)`;
+          }
+          const summaryStr = `${candidate.metrics.drivingKm.toFixed(0)} km · ${formatDuration(candidate.metrics.totalShiftMin)}`;
           return `
             <button class="route-alt-tab ${isActive ? 'active' : ''}" data-opt-idx="${idx}">
-              ${label}: ${candidate.places[1]?.name || 'Direct'} (${candidate.metrics.drivingKm.toFixed(0)} km · ${formatDuration(candidate.metrics.totalShiftMin)})
+              ${label}: ${candidate.places.slice(1, -1).map(p => p.name).join(" → ") || candidate.places[1]?.name || 'Direct'} (${summaryStr})
             </button>
           `;
         }).join("")}
@@ -544,18 +604,42 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
 
   // 2. Realistic Day Limit Alert
   let dayLimitAlert = "";
-  if (totalCandidateStopsCount > (places.length - 2) && totalDays === 1) {
+  if (metrics.isMultiDayAlternative) {
     dayLimitAlert = `
       <div class="alert-day-limit">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div>
-          <strong>Optimized for 1 Day (Legal &amp; Shift Limits):</strong> Filtered to the most profitable corridor to ensure driving stays within legal limits (~650 km / 10h total workday with breaks and vehicle handovers). To cover all requested areas, increase <strong>Total Days</strong> to 2 or 3.
+          <strong>Multi-Day Alternative (${metrics.effectiveDays} Days):</strong> This circuit spans ${metrics.drivingKm.toFixed(0)} km and requires ${formatDuration(metrics.totalShiftMin)} total workday. It is split over ${metrics.effectiveDays} days with <strong>${metrics.hotelNights} hotel night (-${metrics.hotelCost.toFixed(2)} €)</strong> deducted from net earnings to ensure driver safety and legal compliance.
+        </div>
+      </div>
+    `;
+  } else if (totalCandidateStopsCount > (places.length - 2) && totalDays === 1) {
+    dayLimitAlert = `
+      <div class="alert-day-limit">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div>
+          <strong>Optimized for 1 Day (&le; 15h Workday):</strong> The route was automatically trimmed to the most profitable corridor (${metrics.drivingKm.toFixed(0)} km) to keep total working time realistic (${formatDuration(metrics.totalShiftMin)} including handovers and breaks). Click the multi-day tab above if you prefer covering all destinations over 2+ days.
         </div>
       </div>
     `;
   }
 
+  // Hotel allowance display in breakdown
+  const hotelHtml = metrics.hotelCost > 0 ? `
+    <div class="time-breakdown-item">
+      <div class="time-breakdown-label" data-i18n="kpi_hotel">Hotel / Pernoctació</div>
+      <div class="time-breakdown-val" style="color:#ef4444;">-${metrics.hotelCost.toFixed(2)} &euro; (${metrics.hotelNights} nit/s)</div>
+    </div>
+  ` : `
+    <div class="time-breakdown-item">
+      <div class="time-breakdown-label">Est. Fuel &amp; Tolls</div>
+      <div class="time-breakdown-val" style="color:var(--muted);">${metrics.estFuelTolls.toFixed(2)} &euro;</div>
+    </div>
+  `;
+
   // 3. Render KPI Summary & Operational Time Breakdown
+  const shiftDisplay = metrics.effectiveDays > 1 ? `${formatDuration(metrics.totalShiftMin)} (${metrics.effectiveDays} days)` : formatDuration(metrics.totalShiftMin);
+
   els.summary.innerHTML = `
     ${altsHtml}
     <div class="summary-headline">
@@ -569,7 +653,7 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
       </div>
       <div class="kpi-card">
         <div class="kpi-label" data-i18n="kpi_total_shift">Total Workday</div>
-        <div class="kpi-value">${formatDuration(metrics.totalShiftMin)}</div>
+        <div class="kpi-value">${shiftDisplay}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Total Gross Payout</div>
@@ -599,10 +683,7 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
         <div class="time-breakdown-label" data-i18n="kpi_breaks_transit">Breaks &amp; Transit</div>
         <div class="time-breakdown-val">${formatDuration(metrics.breakMin + metrics.transitMin)}</div>
       </div>
-      <div class="time-breakdown-item">
-        <div class="time-breakdown-label">Est. Fuel &amp; Tolls</div>
-        <div class="time-breakdown-val" style="color:var(--muted);">${metrics.estFuelTolls.toFixed(2)} &euro;</div>
-      </div>
+      ${hotelHtml}
     </div>
 
     ${dayLimitAlert}
@@ -646,7 +727,6 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
     const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
     const wazeUrl = `https://waze.com/ul?q=${destParam}&navigate=yes`;
 
-    // Compact reference code (e.g. #ONL-4472, #OTQ-8120, #DRV-1930)
     const refCode = m.missionId.startsWith("#") ? m.missionId : `#${m.missionId}`;
     const unifiedBadge = `
       <a href="${m.appUrl}" target="_blank" rel="noopener" class="badge ${m.badgeClass} badge-link" title="Open in ${m.label} Driver App">
