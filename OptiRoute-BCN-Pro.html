@@ -48,6 +48,7 @@ th{background:#0f172a}
 <button class="tab" data-tab="checklist">Checklist dia</button>
 <button class="tab" data-tab="links">Enlaces</button>
 <button class="tab" data-tab="providers">Proveedores</button>
+<button class="tab" data-tab="config">Config API</button>
 </nav>
 <main>
 <section id="dashboard" class="tabcontent">
@@ -133,6 +134,21 @@ th{background:#0f172a}
 </div>
 <button class="btn" id="addProvBtn">Añadir proveedor</button>
 <div id="providersTable" style="margin-top:1rem"></div>
+</div>
+</section>
+<section id="config" class="tabcontent hidden">
+<div class="card">
+<h3>Configuración de APIs</h3>
+<p class="muted">Guarda endpoints y claves. Si un proveedor no ofrece API pública, usa la ingesta manual en "Añadir misión".</p>
+<div id="configForms"></div>
+</div>
+<div class="card">
+<h3>Cómo obtener credenciales</h3>
+<ul>
+<li><strong>ONLOGIST:</strong> plataforma B2B. Solicita acceso API en su portal de desarrolladores / soporte (dev.portal.onlogist.com). Requiere cuenta de empresa.</li>
+<li><strong>Otoqi:</strong> plataforma B2B. Contacta con Otoqi para integración API (no hay registro self-serve público).</li>
+<li><strong>DriiveMe:</strong> API para partners. Crea cuenta y solicita clave API a soporte DriiveMe.</li>
+</ul>
 </div>
 </section>
 </main>
@@ -239,6 +255,29 @@ function renderProviders(){
   const linksRow = document.querySelector("#links .row");
   if(linksRow){ linksRow.innerHTML = providers.map(p=>"<a class='btn' href='"+p.url+"' target='_blank'>"+p.name+"</a>").join(""); }
 }
+function loadApiConfig(){try{const raw=localStorage.getItem(STORAGE_KEY+"_apiconfig");if(raw)return JSON.parse(raw);}catch(e){}return {};}
+function saveApiConfig(cfg){localStorage.setItem(STORAGE_KEY+"_apiconfig",JSON.stringify(cfg));}
+let apiConfig = loadApiConfig();
+function renderConfigForms(){
+  const el=document.getElementById("configForms");
+  let html="";
+  for(const p of providers){
+    const c=apiConfig[p.name]||{baseUrl:"",apiKey:"",enabled:false};
+    html+="<div class='card'><h4>"+p.name+"</h4><div class='row'><label>Base URL<input data-prov='"+p.name+"' class='cfg-url' value='"+(c.baseUrl||"")+"'></label><label>API Key<input data-prov='"+p.name+"' class='cfg-key' value='"+(c.apiKey||"")+"'></label><label>Activo<input data-prov='"+p.name+"' class='cfg-enabled' type='checkbox' "+(c.enabled?"checked":"")+"></label></div><button class='btn cfg-save' data-prov='"+p.name+"'>Guardar</button></div>";
+  }
+  el.innerHTML=html;
+  el.querySelectorAll(".cfg-save").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const name=btn.dataset.prov;
+      const url=el.querySelector(".cfg-url[data-prov='"+name+"']").value;
+      const key=el.querySelector(".cfg-key[data-prov='"+name+"']").value;
+      const enabled=el.querySelector(".cfg-enabled[data-prov='"+name+"']").checked;
+      apiConfig[name]={baseUrl:url,apiKey:key,enabled};
+      saveApiConfig(apiConfig);
+      alert("Config guardada para "+name);
+    });
+  });
+}
 function renderAll(){
   populatePlatformSelects();
   populateDestFilter();
@@ -248,6 +287,8 @@ function renderAll(){
   renderTable("missionsTable",missions);
   const co=document.getElementById("chainOrigin");
   co.innerHTML=missions.map(m=>"<option value='"+m.id+"'>"+m.platform+" · "+m.origin+" → "+m.destination+" ("+netProfit(m)+"€)</option>").join("");
+  renderProviders();
+  renderConfigForms();
 }
 function switchTab(name){
   document.querySelectorAll(".tabcontent").forEach(s=>s.classList.add("hidden"));
