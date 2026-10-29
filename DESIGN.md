@@ -46,5 +46,8 @@ Inspired by xarop.com: clean, light, generous whitespace, subtle borders, no hea
 - Stack columns on small screens.
 - Tables scroll horizontally.
 
+## Icons
+- Use inline SVG icons only. Do not use unicode/emoji icons.
+
 ## Developed in Barcelona by xarop.com
 https://xarop.com
