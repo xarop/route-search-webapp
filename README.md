@@ -1,22 +1,22 @@
-# Buscador de Rutas Reales (Otoqui / Driiveme / Onlogist)
+# OptiRoute / Buscador de Rutas Reales
 
-Webapp para buscar y combinar rutas con varios viajes entre ciudades, usando distancias y tiempos reales por carretera (OSRM + OpenStreetMap).
+Proyecto con dos aplicaciones:
 
-## Caracteristicas
-- Origen y destino por defecto: Barcelona.
-- Dias totales por defecto: 1.
-- Rutas con varias paradas (ej. Barcelona -> Zaragoza -> Madrid -> Valencia -> Tarragona -> Barcelona).
-- Seleccion de plataformas: Otoqui, Driiveme, Onlogist.
-- Calculo de km totales, tiempo estimado, costes por plataforma e importe total.
+1. `index.html` + `app.js` + `styles.css`: buscador de rutas multi-tramo entre ciudades usando distancias/tiempos reales (OSRM + OpenStreetMap), con plataformas Otoqui, Driiveme y Onlogist.
+2. `OptiRoute-BCN-Pro.html`: aplicación de un solo archivo para transportistas de vehículos en Barcelona (misiones, beneficio neto, encadenado de viajes, checklist y proveedores extensibles).
 
-## Uso
-Abrir `index.html` en el navegador (o servir con un servidor estatico).
+## Ejecutar en local
+Desde la carpeta del proyecto:
 
-## Nota sobre APIs reales
-Las plataformas Otoqui, Driiveme y Onlogist son B2B y requieren credenciales/API keys. Los adaptadores actuales generan estimaciones de precio basadas en distancia. Sustituye `mockOffers` por llamadas reales cuando tengas acceso.
+```bash
+cd "/Users/xarop/Local Sites/route-search-webapp"
+python3 -m http.server 8000
+```
 
-## GitHub
-Este proyecto se ha inicializado como repositorio git local. Para subirlo a GitHub:
-1. Crea un repositorio vacio en GitHub (ej. `route-search-webapp`).
-2. `git remote add origin git@github.com:TU_USUARIO/route-search-webapp.git`
-3. `git push -u origin main` (o `master` segun rama).
+Luego abre en el navegador:
+- http://localhost:8000/
+- http://localhost:8000/OptiRoute-BCN-Pro.html
+
+## Notas
+- Las plataformas son B2B; los precios de `OptiRoute-BCN-Pro.html` son estimaciones editables.
+- Los proveedores se pueden añadir/eliminar desde la pestaña "Proveedores".
