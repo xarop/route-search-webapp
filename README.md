@@ -9,7 +9,7 @@ Project with two applications:
 From the project folder:
 
 ```bash
-cd "/Users/xarop/Local Sites/route-search-webapp"
+cd route-search-webapp
 python3 -m http.server 8000
 ```
 
