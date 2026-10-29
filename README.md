@@ -21,5 +21,5 @@ Then open in your browser:
 - Platforms are B2B; prices in `OptiRoute-BCN-Pro.html` are editable estimates.
 - Providers can be added/removed from the "Providers" tab.
 
-## Developed by xarop.com
+## Developed in Barcelona by xarop.com
 https://xarop.com

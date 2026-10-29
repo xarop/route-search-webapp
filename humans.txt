@@ -1,0 +1,12 @@
+/* TEAM */
+Developer: xarop.com
+Location: Barcelona, Spain
+Site: https://xarop.com
+
+/* THANKS */
+OpenStreetMap, OSRM, Google Translate
+
+/* SITE */
+Last update: 2026
+Language: English / Spanish
+Doctype: HTML5
