@@ -387,86 +387,150 @@ async function search() {
     </div>
   `;
 
-  // Render Table
+  // Container for results
+  els.results.innerHTML = "";
+
+  // 1. Desktop Table View (Optimized & unified platform badge)
+  const desktopWrapper = document.createElement("div");
+  desktopWrapper.className = "table-wrapper desktop-only";
+
   const table = document.createElement("table");
   table.innerHTML = `
     <thead>
       <tr>
-        <th>Platform</th>
-        <th>Leg</th>
-        <th>Vehicle / Mission</th>
-        <th>Distance</th>
-        <th>Duration</th>
+        <th>Leg &amp; Route</th>
+        <th>Distance &amp; Time</th>
+        <th>Mission &amp; Platform</th>
         <th>Driver Payout</th>
-        <th>Navigation &amp; Mobile Links</th>
+        <th>Navigation</th>
       </tr>
     </thead>
     <tbody></tbody>
   `;
   const tbody = table.querySelector("tbody");
 
-  missions.forEach((m, idx) => {
-    const tr = document.createElement("tr");
+  // 2. Mobile Cards View (Touch-friendly, no cutoffs, quick actions)
+  const mobileWrapper = document.createElement("div");
+  mobileWrapper.className = "mobile-leg-cards mobile-only";
 
+  missions.forEach((m, idx) => {
     // Google Maps & Waze Deep Links
     const originParam = encodeURIComponent(m.origin);
     const destParam = encodeURIComponent(m.destination);
     const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
     const wazeUrl = `https://waze.com/ul?q=${destParam}&navigate=yes`;
 
+    // Unified platform badge markup with direct link to mission / driver app
+    const unifiedBadge = `
+      <a href="${m.appUrl}" target="_blank" rel="noopener" class="badge ${m.badgeClass} badge-link" title="Open in ${m.label} Driver App">
+        <span>${m.label}</span>
+        <small style="opacity:0.85; font-size:0.75rem;">#${m.missionId}</small>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    `;
+
+    // A. Desktop Row
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <span class="badge ${m.badgeClass}">${m.label}</span>
+        <div style="font-weight:700; font-size:0.95rem;">${m.origin} &rarr; ${m.destination}</div>
       </td>
       <td>
-        <strong>${m.origin}</strong> &rarr; <strong>${m.destination}</strong>
+        <div><strong>${m.distanceKm.toFixed(1)} km</strong></div>
+        <small style="color:var(--muted);">${formatDuration(m.durationMin)}</small>
       </td>
       <td>
-        <div><strong>${m.vehicle}</strong></div>
-        <small style="color:var(--muted); font-size:0.75rem;">ID: ${m.missionId}</small>
+        <div>${unifiedBadge}</div>
+        <small style="color:var(--muted); font-size:0.8rem;">${m.vehicle}</small>
       </td>
-      <td>${m.distanceKm.toFixed(1)} km</td>
-      <td>${formatDuration(m.durationMin)}</td>
       <td>
-        <strong style="color:var(--success); font-size:1.05rem;">
+        <strong style="color:var(--success); font-size:1.15rem;">
           ${m.payout > 0 ? `${m.payout.toFixed(2)} &euro;` : 'Transit'}
         </strong>
       </td>
       <td>
-        <div class="quick-links-bar">
+        <div class="quick-links-bar" style="margin-top:0;">
           <a href="${gmapsUrl}" target="_blank" rel="noopener" class="btn-app-link" title="Open Google Maps Navigation">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-            <span>Google Maps</span>
+            <span>Maps</span>
           </a>
           <a href="${wazeUrl}" target="_blank" rel="noopener" class="btn-app-link" title="Open Waze App">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
             <span>Waze</span>
           </a>
-          <a href="${m.appUrl}" target="_blank" rel="noopener" class="btn-app-link" style="color:var(--primary);" title="Open Platform Driver App">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            <span>${m.label}</span>
-          </a>
         </div>
       </td>
     `;
     tbody.appendChild(tr);
+
+    // B. Mobile Leg Card
+    const card = document.createElement("div");
+    card.className = "leg-card";
+    card.innerHTML = `
+      <div class="leg-card-header">
+        <div class="leg-route">${m.origin} &rarr; ${m.destination}</div>
+        <div class="leg-payout">${m.payout > 0 ? `${m.payout.toFixed(2)} &euro;` : 'Transit'}</div>
+      </div>
+
+      <div class="leg-meta">
+        <div class="leg-meta-item">
+          <strong>${m.distanceKm.toFixed(1)} km</strong>
+          <span>&middot;</span>
+          <span>${formatDuration(m.durationMin)}</span>
+        </div>
+        <div>
+          ${unifiedBadge}
+        </div>
+      </div>
+
+      <div style="font-size:0.85rem; color:var(--muted);">
+        ${m.vehicle}
+      </div>
+
+      <div class="leg-actions">
+        <a href="${gmapsUrl}" target="_blank" rel="noopener" class="btn-app-link" title="Open Google Maps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          <span>Google Maps</span>
+        </a>
+        <a href="${wazeUrl}" target="_blank" rel="noopener" class="btn-app-link" title="Open Waze">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+          <span>Waze</span>
+        </a>
+      </div>
+    `;
+    mobileWrapper.appendChild(card);
   });
 
-  // Table Total Row
+  // Desktop Total Row
   const totalTr = document.createElement("tr");
   totalTr.className = "total-row";
   totalTr.innerHTML = `
-    <td><strong>TOTAL</strong></td>
-    <td><strong>${places.length - 1} Legs</strong></td>
+    <td><strong>TOTAL</strong> (${places.length - 1} Legs)</td>
+    <td><strong>${totalKm.toFixed(1)} km &middot; ${formatDuration(totalMin)}</strong></td>
     <td><strong>${missions.filter(m => m.provider !== 'osrm').length} Connected Missions</strong></td>
-    <td><strong>${totalKm.toFixed(1)} km</strong></td>
-    <td><strong>${formatDuration(totalMin)}</strong></td>
-    <td><strong style="color:var(--success); font-size:1.15rem;">${totalPayout.toFixed(2)} &euro;</strong></td>
+    <td><strong style="color:var(--success); font-size:1.2rem;">${totalPayout.toFixed(2)} &euro;</strong></td>
     <td></td>
   `;
   tbody.appendChild(totalTr);
+  desktopWrapper.appendChild(table);
 
-  els.results.appendChild(table);
+  // Mobile Total Card
+  const mobileTotal = document.createElement("div");
+  mobileTotal.className = "mobile-total-card";
+  mobileTotal.innerHTML = `
+    <div>
+      <div style="font-size:0.95rem;">TOTAL (${places.length - 1} Legs &middot; ${missions.filter(m => m.provider !== 'osrm').length} Missions)</div>
+      <small style="color:var(--muted); font-weight:normal;">${totalKm.toFixed(1)} km &middot; ${formatDuration(totalMin)}</small>
+    </div>
+    <div style="font-size:1.35rem; color:var(--success); font-weight:700;">
+      ${totalPayout.toFixed(2)} &euro;
+    </div>
+  `;
+  mobileWrapper.appendChild(mobileTotal);
+
+  // Append both views to results
+  els.results.appendChild(desktopWrapper);
+  els.results.appendChild(mobileWrapper);
 
   // Render Driver Action Protocols
   renderDriverProtocols(missions);
