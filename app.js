@@ -197,3 +197,16 @@ els.clearBtn.addEventListener("click", clearAll);
 initMap();
 loadExample();
 search().catch((e) => { els.summary.textContent = "Error: " + e.message; });
+
+const themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  themeToggle.textContent = saved === 'dark' ? '☀️' : '🌙';
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', current);
+    localStorage.setItem('theme', current);
+    themeToggle.textContent = current === 'dark' ? '☀️' : '🌙';
+  });
+}
