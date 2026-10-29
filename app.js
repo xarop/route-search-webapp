@@ -1,6 +1,7 @@
 /**
  * OptiRoute / Real Route Finder
  * Multi-platform Vehicle Jockey & Mission Planner (Otoqi, Driiveme, Onlogist)
+ * Realistic operational shifts, EU driving breaks, and candidate corridor optimization
  * Developed in Barcelona by xarop.com
  */
 
@@ -13,7 +14,7 @@ const platformProfiles = {
   otoqui: {
     label: "Otoqi",
     badgeClass: "badge-otoqi",
-    baseFee: 24,
+    baseFee: 25,
     perKm: 0.28,
     appUrl: "https://en.otoqi.com/",
     mobileDeepLink: "otoqi://missions",
@@ -28,7 +29,7 @@ const platformProfiles = {
   driiveme: {
     label: "Driiveme",
     badgeClass: "badge-driiveme",
-    baseFee: 20,
+    baseFee: 22,
     perKm: 0.26,
     appUrl: "https://www.driiveme.com/pro/",
     mobileDeepLink: "driiveme://transfers",
@@ -43,8 +44,8 @@ const platformProfiles = {
   onlogist: {
     label: "Onlogist",
     badgeClass: "badge-onlogist",
-    baseFee: 28,
-    perKm: 0.30,
+    baseFee: 30,
+    perKm: 0.31,
     appUrl: "https://www.onlogist.com/",
     mobileDeepLink: "onlogist://orders",
     portalName: "Onlogist Mobile Portal",
@@ -69,7 +70,6 @@ function getSelectedProviders() {
   return selected;
 }
 
-// Setup interactive UI for platform checkboxes
 function setupPlatformCheckboxes() {
   document.querySelectorAll(".platform-choice").forEach(card => {
     const checkbox = card.querySelector("input[type='checkbox']");
@@ -87,12 +87,13 @@ function setupPlatformCheckboxes() {
     updateState();
   });
 }
+
+// DOM Elements
 const els = {
   origin: document.getElementById("origin"),
   destination: document.getElementById("destination"),
   totalDays: document.getElementById("totalDays"),
   stops: document.getElementById("stops"),
-  providers: document.getElementById("providers"),
   prefStrategy: document.getElementById("prefStrategy"),
   searchBtn: document.getElementById("searchBtn"),
   exampleBtn: document.getElementById("exampleBtn"),
@@ -104,6 +105,12 @@ const els = {
 
 let map = null;
 let routeLayer = null;
+let currentComputedOptions = [];
+let activeOptionIndex = 0;
+
+// Cache for geocoding and road legs to ensure instant calculations
+const geocodeCache = new Map();
+const roadRouteCache = new Map();
 
 // ==========================================================================
 // Map Initialization
@@ -118,30 +125,42 @@ function initMap() {
 }
 
 // ==========================================================================
-// Geocoding via Photon OSM
+// Geocoding via Photon OSM with Caching
 // ==========================================================================
 async function geocode(place) {
-  const url = `${PHOTON_GEOCODE}?q=${encodeURIComponent(place)}&limit=1`;
+  const trimmed = place.trim();
+  if (geocodeCache.has(trimmed.toLowerCase())) {
+    return geocodeCache.get(trimmed.toLowerCase());
+  }
+
+  const url = `${PHOTON_GEOCODE}?q=${encodeURIComponent(trimmed)}&limit=1`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Geocoding failed for: ${place}`);
+  if (!res.ok) throw new Error(`Geocoding failed for: ${trimmed}`);
   const data = await res.json();
   if (!data.features || !data.features.length) {
-    throw new Error(`Location not found: "${place}"`);
+    throw new Error(`Location not found: "${trimmed}"`);
   }
   const f = data.features[0];
   const displayName = f.properties.name + (f.properties.city ? `, ${f.properties.city}` : (f.properties.state ? `, ${f.properties.state}` : ""));
-  return {
-    name: place,
+  const result = {
+    name: trimmed,
     fullName: displayName,
     lat: f.geometry.coordinates[1],
     lon: f.geometry.coordinates[0]
   };
+  geocodeCache.set(trimmed.toLowerCase(), result);
+  return result;
 }
 
 // ==========================================================================
-// OSRM Road Distance & Geometry Calculation
+// OSRM Road Distance & Geometry Calculation with Caching
 // ==========================================================================
 async function routeBetween(from, to) {
+  const cacheKey = `${from.name}->${to.name}`;
+  if (roadRouteCache.has(cacheKey)) {
+    return roadRouteCache.get(cacheKey);
+  }
+
   const customOsrm = decodeStorage(localStorage.getItem("osrmUrl")) || OSRM_DEFAULT;
   const baseUrl = customOsrm.replace(/\/+$/, "");
   const routeUrl = `${baseUrl.includes("/route/v1") ? baseUrl : baseUrl + "/route/v1/driving"}/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`;
@@ -153,11 +172,13 @@ async function routeBetween(from, to) {
     throw new Error(`No drivable road route found between ${from.name} and ${to.name}`);
   }
   const r = data.routes[0];
-  return {
+  const result = {
     distanceKm: r.distance / 1000,
     durationMin: r.duration / 60,
     geometry: r.geometry
   };
+  roadRouteCache.set(cacheKey, result);
+  return result;
 }
 
 // ==========================================================================
@@ -168,11 +189,10 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
   const customUrl = decodeStorage(localStorage.getItem(`${provider}Url`));
   const prof = platformProfiles[provider];
 
-  // If the user configured an actual endpoint, try calling it with graceful timeout
   if (key && customUrl) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(`${customUrl}/missions/search?origin=${encodeURIComponent(from.name)}&destination=${encodeURIComponent(to.name)}`, {
         headers: { Authorization: `Bearer ${key}`, "x-api-key": key },
         signal: controller.signal
@@ -204,7 +224,6 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
     }
   }
 
-  // Realistic vehicle jockey mission model for the leg
   const vehicleModels = [
     "Cupra Formentor (Automatic)",
     "Tesla Model 3 (EV 100%)",
@@ -215,7 +234,6 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
   ];
   const vehicle = vehicleModels[Math.abs(hashString(from.name + to.name + provider)) % vehicleModels.length];
   
-  // Compensation calculation based on real distance + platform base
   const multiplier = provider === "onlogist" ? 1.08 : (provider === "otoqui" ? 1.02 : 0.98);
   const payout = Number((prof.baseFee + (distanceKm * prof.perKm * multiplier)).toFixed(2));
 
@@ -237,9 +255,59 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
 }
 
 // ==========================================================================
-// Chained Multi-Leg Itinerary Optimizer
+// Realistic Operational Metrics Calculator
 // ==========================================================================
-async function buildOptimalItinerary(places, selectedProviders, strategy) {
+function calculateRealisticMetrics(legs, missions, totalDays) {
+  const drivingKm = legs.reduce((acc, l) => acc + l.distanceKm, 0);
+  const drivingMin = legs.reduce((acc, l) => acc + l.durationMin, 0);
+
+  // Each mission leg requires vehicle check-in (25m) + delivery handover & CMR (20m) = 45m
+  const missionsCount = missions.filter(m => m.provider !== 'osrm').length || legs.length;
+  const inspectionMin = missionsCount * 45;
+
+  // Transit/transfer time to reach next vehicle pick-up in the same city/terminal
+  const transitMin = Math.max(0, (missionsCount - 1) * 35);
+
+  // Mandatory EU driving breaks: 45m break every 4.5h of driving
+  let breakMin = 0;
+  if (drivingMin > 270) breakMin += 45;
+  if (drivingMin > 510) breakMin += 45;
+
+  // Total realistic shift time
+  const totalShiftMin = Math.round(drivingMin + inspectionMin + transitMin + breakMin);
+
+  // Financials
+  const grossPayout = missions.reduce((acc, m) => acc + (m.payout || 0), 0);
+  const estFuelTolls = drivingKm * 0.085;
+  const netProfit = Math.max(0, grossPayout - estFuelTolls);
+  const hourlyNet = totalShiftMin > 0 ? (netProfit / (totalShiftMin / 60)) : 0;
+
+  // Legal & physiological daily limits (650 km / day and 10.5h shift / day)
+  const maxAllowedKm = totalDays * 650;
+  const maxAllowedShiftMin = totalDays * 630; // 10.5h
+  const isFeasible = (drivingKm <= maxAllowedKm) && (totalShiftMin <= maxAllowedShiftMin);
+
+  return {
+    drivingKm,
+    drivingMin,
+    inspectionMin,
+    transitMin,
+    breakMin,
+    totalShiftMin,
+    grossPayout,
+    estFuelTolls,
+    netProfit,
+    hourlyNet,
+    isFeasible,
+    maxAllowedKm,
+    maxAllowedShiftMin
+  };
+}
+
+// ==========================================================================
+// Candidate Sequence Evaluator
+// ==========================================================================
+async function evaluateStopSequence(places, selectedProviders, strategy, totalDays) {
   const legs = [];
   const chosenMissions = [];
 
@@ -247,35 +315,27 @@ async function buildOptimalItinerary(places, selectedProviders, strategy) {
     const from = places[i];
     const to = places[i + 1];
 
-    // Compute real road distance & geometry
     const road = await routeBetween(from, to);
     legs.push({ from, to, ...road });
 
-    // Query candidate missions across selected platforms
     const candidates = [];
     for (const prov of selectedProviders) {
       const mission = await fetchPlatformMission(prov, from, to, road.distanceKm, road.durationMin);
       candidates.push(mission);
     }
 
-    // Sort according to driver preference
     if (strategy === "profit") {
-      // Highest driver compensation first
       candidates.sort((a, b) => b.payout - a.payout);
     } else if (strategy === "cheapest") {
-      // Lower tolls/expenses priority (Driiveme / Otoqi)
       candidates.sort((a, b) => a.payout - b.payout);
     } else {
-      // Fastest / standard order
       candidates.sort((a, b) => a.durationMin - b.durationMin);
     }
 
     if (candidates.length > 0) {
-      // Select best platform for this leg to avoid overlapping same provider if possible
       let chosen = candidates[0];
       if (chosenMissions.length > 0 && candidates.length > 1) {
         const lastProv = chosenMissions[chosenMissions.length - 1].provider;
-        // Prioritize alternating platforms for true multi-platform combination
         const alternative = candidates.find(c => c.provider !== lastProv);
         if (alternative && (strategy !== "profit" || alternative.payout >= chosen.payout * 0.9)) {
           chosen = alternative;
@@ -283,7 +343,6 @@ async function buildOptimalItinerary(places, selectedProviders, strategy) {
       }
       chosenMissions.push(chosen);
     } else {
-      // Fallback empty leg (driver in transit)
       chosenMissions.push({
         provider: "osrm",
         label: "Direct Road",
@@ -302,7 +361,95 @@ async function buildOptimalItinerary(places, selectedProviders, strategy) {
     }
   }
 
-  return { legs, missions: chosenMissions };
+  const metrics = calculateRealisticMetrics(legs, chosenMissions, totalDays);
+  return { places, legs, missions: chosenMissions, metrics };
+}
+
+// ==========================================================================
+// Smart Route Generator with Orientation Stops & Daily Limits
+// ==========================================================================
+async function generateSmartRouteOptions(originPlace, destPlace, candidateStops, selectedProviders, strategy, totalDays) {
+  const isLoop = originPlace.name.toLowerCase() === destPlace.name.toLowerCase();
+  const options = [];
+
+  // Generate sub-route candidate paths
+  const candidatePaths = [];
+
+  if (candidateStops.length === 0) {
+    if (!isLoop) {
+      candidatePaths.push([originPlace, destPlace]);
+    } else {
+      // Default corridor if loop without stops
+      const defaultStop = await geocode("Tarragona");
+      candidatePaths.push([originPlace, defaultStop, destPlace]);
+    }
+  } else if (candidateStops.length === 1) {
+    candidatePaths.push([originPlace, candidateStops[0], destPlace]);
+  } else {
+    // When intermediate stops are provided, evaluate them as orientation areas
+    // A. Two-stop loops
+    for (let i = 0; i < candidateStops.length; i++) {
+      for (let j = 0; j < candidateStops.length; j++) {
+        if (i !== j) {
+          candidatePaths.push([originPlace, candidateStops[i], candidateStops[j], destPlace]);
+        }
+      }
+    }
+
+    // B. Single-stop corridors
+    for (let i = 0; i < candidateStops.length; i++) {
+      candidatePaths.push([originPlace, candidateStops[i], destPlace]);
+    }
+
+    // C. If user selected multi-days (2+ days), allow 3 or all candidate stops in chain
+    if (totalDays >= 2) {
+      candidatePaths.push([originPlace, ...candidateStops, destPlace]);
+    }
+  }
+
+  // Deduplicate paths
+  const seenPathKeys = new Set();
+  const uniquePaths = [];
+  for (const path of candidatePaths) {
+    const key = path.map(p => p.name).join("->");
+    if (!seenPathKeys.has(key)) {
+      seenPathKeys.add(key);
+      uniquePaths.push(path);
+    }
+  }
+
+  // Evaluate candidate paths
+  for (const path of uniquePaths.slice(0, 12)) {
+    try {
+      const evaluated = await evaluateStopSequence(path, selectedProviders, strategy, totalDays);
+      options.push(evaluated);
+    } catch (e) {
+      console.warn("Could not evaluate path:", e.message);
+    }
+  }
+
+  if (options.length === 0) {
+    throw new Error("Could not compute valid road legs between the specified points.");
+  }
+
+  // Sort candidate options
+  options.sort((a, b) => {
+    // 1. Feasible options first
+    if (a.metrics.isFeasible && !b.metrics.isFeasible) return -1;
+    if (!a.metrics.isFeasible && b.metrics.isFeasible) return 1;
+
+    // 2. Score by driver strategy
+    if (strategy === "profit") {
+      // Balance net profit and hourly efficiency
+      return (b.metrics.netProfit * 1.5 + b.metrics.hourlyNet * 8) - (a.metrics.netProfit * 1.5 + a.metrics.hourlyNet * 8);
+    } else if (strategy === "fastest") {
+      return a.metrics.totalShiftMin - b.metrics.totalShiftMin;
+    } else {
+      return a.metrics.estFuelTolls - b.metrics.estFuelTolls;
+    }
+  });
+
+  return options;
 }
 
 // ==========================================================================
@@ -321,76 +468,157 @@ async function search() {
     return;
   }
 
-  const stopNames = buildStopsList();
-  if (stopNames.length < 2) {
+  const originName = els.origin ? els.origin.value.trim() : "Barcelona";
+  const destName = els.destination ? els.destination.value.trim() : "Barcelona";
+  const stopsRaw = els.stops ? els.stops.value.trim() : "";
+  const totalDays = Math.max(1, parseInt(els.totalDays ? els.totalDays.value : "1", 10) || 1);
+  const strategy = els.prefStrategy ? els.prefStrategy.value : "profit";
+
+  if (!originName || !destName) {
     els.summary.innerHTML = `<div style="color:var(--warning);">Please specify an origin and destination.</div>`;
     return;
   }
 
-  // Geocode all stops
-  let places = [];
+  // Geocode Origin & Destination
+  let originPlace, destPlace;
   try {
-    for (const name of stopNames) {
-      places.push(await geocode(name));
-      await new Promise(r => setTimeout(r, 150));
-    }
+    originPlace = await geocode(originName);
+    destPlace = await geocode(destName);
   } catch (err) {
     els.summary.innerHTML = `<div style="color:#ef4444;"><strong>Geocoding error:</strong> ${err.message}</div>`;
     return;
   }
 
-  // Build optimized route
-  const strategy = els.prefStrategy ? els.prefStrategy.value : "profit";
-  let itinerary;
-  try {
-    itinerary = await buildOptimalItinerary(places, providers, strategy);
-  } catch (err) {
-    els.summary.innerHTML = `<div style="color:#ef4444;"><strong>Routing error:</strong> ${err.message}</div>`;
-    return;
+  // Geocode intermediate candidate orientation stops
+  const candidateStops = [];
+  if (stopsRaw) {
+    const rawList = stopsRaw.split(",").map(s => s.trim()).filter(Boolean);
+    for (const s of rawList) {
+      if (s.toLowerCase() !== originName.toLowerCase() && s.toLowerCase() !== destName.toLowerCase()) {
+        try {
+          candidateStops.push(await geocode(s));
+          await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+          console.warn(`Stop ${s} ignored:`, e.message);
+        }
+      }
+    }
   }
 
-  const { legs, missions } = itinerary;
+  // Compute Smart Route Options
+  try {
+    currentComputedOptions = await generateSmartRouteOptions(originPlace, destPlace, candidateStops, providers, strategy, totalDays);
+    activeOptionIndex = 0;
+    renderActiveOption(totalDays, candidateStops.length);
+  } catch (err) {
+    els.summary.innerHTML = `<div style="color:#ef4444;"><strong>Routing error:</strong> ${err.message}</div>`;
+  }
+}
 
-  // Totals
-  const totalKm = legs.reduce((acc, l) => acc + l.distanceKm, 0);
-  const totalMin = legs.reduce((acc, l) => acc + l.durationMin, 0);
-  const totalPayout = missions.reduce((acc, m) => acc + (m.payout || 0), 0);
-  const estFuelTolls = totalKm * 0.085;
-  const netProfit = Math.max(0, totalPayout - estFuelTolls);
+// ==========================================================================
+// Render Selected Route Option
+// ==========================================================================
+function renderActiveOption(totalDays, totalCandidateStopsCount) {
+  if (!currentComputedOptions.length) return;
+  const opt = currentComputedOptions[activeOptionIndex];
+  const { places, legs, missions, metrics } = opt;
 
-  // Render KPI Summary
+  // 1. Alternative Route Tabs if multiple feasible options exist
+  let altsHtml = "";
+  if (currentComputedOptions.length > 1) {
+    altsHtml = `
+      <div class="route-alternatives-bar">
+        ${currentComputedOptions.slice(0, 3).map((candidate, idx) => {
+          const isActive = idx === activeOptionIndex;
+          const stopNames = candidate.places.map(p => p.name).join(" → ");
+          const label = idx === 0 ? "Option 1 (Recommended Loop)" : `Option ${idx + 1}`;
+          return `
+            <button class="route-alt-tab ${isActive ? 'active' : ''}" data-opt-idx="${idx}">
+              ${label}: ${candidate.places[1]?.name || 'Direct'} (${candidate.metrics.drivingKm.toFixed(0)} km · ${formatDuration(candidate.metrics.totalShiftMin)})
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  // 2. Realistic Day Limit Alert
+  let dayLimitAlert = "";
+  if (totalCandidateStopsCount > (places.length - 2) && totalDays === 1) {
+    dayLimitAlert = `
+      <div class="alert-day-limit">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div>
+          <strong>Optimized for 1 Day (Legal &amp; Shift Limits):</strong> Filtered to the most profitable corridor to ensure driving stays within legal limits (~650 km / 10h total workday with breaks and vehicle handovers). To cover all requested areas, increase <strong>Total Days</strong> to 2 or 3.
+        </div>
+      </div>
+    `;
+  }
+
+  // 3. Render KPI Summary & Operational Time Breakdown
   els.summary.innerHTML = `
+    ${altsHtml}
     <div class="summary-headline">
       ${places.map(p => p.name).join(" &rarr; ")}
     </div>
+    
     <div class="kpi-row">
       <div class="kpi-card">
         <div class="kpi-label">Total Distance</div>
-        <div class="kpi-value">${totalKm.toFixed(1)} km</div>
+        <div class="kpi-value">${metrics.drivingKm.toFixed(1)} km</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Est. Driving Time</div>
-        <div class="kpi-value">${formatDuration(totalMin)}</div>
+        <div class="kpi-label" data-i18n="kpi_total_shift">Total Workday</div>
+        <div class="kpi-value">${formatDuration(metrics.totalShiftMin)}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Total Gross Payout</div>
-        <div class="kpi-value profit">${totalPayout.toFixed(2)} &euro;</div>
+        <div class="kpi-value profit">${metrics.grossPayout.toFixed(2)} &euro;</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Est. Net Profit</div>
-        <div class="kpi-value profit">${netProfit.toFixed(2)} &euro;</div>
+        <div class="kpi-value profit">${metrics.netProfit.toFixed(2)} &euro;</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Missions Chained</div>
-        <div class="kpi-value">${missions.filter(m => m.provider !== 'osrm').length} / ${legs.length}</div>
+        <div class="kpi-label" data-i18n="kpi_net_hourly">Net Hourly Rate</div>
+        <div class="kpi-value profit">~${metrics.hourlyNet.toFixed(2)} &euro;/h</div>
       </div>
     </div>
+
+    <!-- Realistic Operational Schedule Breakdown -->
+    <div class="time-breakdown-box">
+      <div class="time-breakdown-item">
+        <div class="time-breakdown-label" data-i18n="kpi_driving_time">Driving Time</div>
+        <div class="time-breakdown-val">${formatDuration(metrics.drivingMin)} (${metrics.drivingKm.toFixed(0)} km)</div>
+      </div>
+      <div class="time-breakdown-item">
+        <div class="time-breakdown-label" data-i18n="kpi_inspections">Check-in &amp; Handovers</div>
+        <div class="time-breakdown-val">${formatDuration(metrics.inspectionMin)} (${missions.length} legs &times; 45m)</div>
+      </div>
+      <div class="time-breakdown-item">
+        <div class="time-breakdown-label" data-i18n="kpi_breaks_transit">Breaks &amp; Transit</div>
+        <div class="time-breakdown-val">${formatDuration(metrics.breakMin + metrics.transitMin)}</div>
+      </div>
+      <div class="time-breakdown-item">
+        <div class="time-breakdown-label">Est. Fuel &amp; Tolls</div>
+        <div class="time-breakdown-val" style="color:var(--muted);">${metrics.estFuelTolls.toFixed(2)} &euro;</div>
+      </div>
+    </div>
+
+    ${dayLimitAlert}
   `;
 
-  // Container for results
+  // Attach alternative tabs event listeners
+  document.querySelectorAll(".route-alt-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      activeOptionIndex = parseInt(tab.getAttribute("data-opt-idx"), 10) || 0;
+      renderActiveOption(totalDays, totalCandidateStopsCount);
+    });
+  });
+
+  // 4. Render Desktop Table & Mobile Leg Cards
   els.results.innerHTML = "";
 
-  // 1. Desktop Table View (Optimized & unified platform badge)
   const desktopWrapper = document.createElement("div");
   desktopWrapper.className = "table-wrapper desktop-only";
 
@@ -409,18 +637,15 @@ async function search() {
   `;
   const tbody = table.querySelector("tbody");
 
-  // 2. Mobile Cards View (Touch-friendly, no cutoffs, quick actions)
   const mobileWrapper = document.createElement("div");
   mobileWrapper.className = "mobile-leg-cards mobile-only";
 
-  missions.forEach((m, idx) => {
-    // Google Maps & Waze Deep Links
+  missions.forEach((m) => {
     const originParam = encodeURIComponent(m.origin);
     const destParam = encodeURIComponent(m.destination);
     const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
     const wazeUrl = `https://waze.com/ul?q=${destParam}&navigate=yes`;
 
-    // Unified platform badge markup with direct link to mission / driver app
     const unifiedBadge = `
       <a href="${m.appUrl}" target="_blank" rel="noopener" class="badge ${m.badgeClass} badge-link" title="Open in ${m.label} Driver App">
         <span>${m.label}</span>
@@ -506,9 +731,9 @@ async function search() {
   totalTr.className = "total-row";
   totalTr.innerHTML = `
     <td><strong>TOTAL</strong> (${places.length - 1} Legs)</td>
-    <td><strong>${totalKm.toFixed(1)} km &middot; ${formatDuration(totalMin)}</strong></td>
+    <td><strong>${metrics.drivingKm.toFixed(1)} km &middot; ${formatDuration(metrics.drivingMin)}</strong></td>
     <td><strong>${missions.filter(m => m.provider !== 'osrm').length} Connected Missions</strong></td>
-    <td><strong style="color:var(--success); font-size:1.2rem;">${totalPayout.toFixed(2)} &euro;</strong></td>
+    <td><strong style="color:var(--success); font-size:1.2rem;">${metrics.grossPayout.toFixed(2)} &euro;</strong></td>
     <td></td>
   `;
   tbody.appendChild(totalTr);
@@ -520,22 +745,19 @@ async function search() {
   mobileTotal.innerHTML = `
     <div>
       <div style="font-size:0.95rem;">TOTAL (${places.length - 1} Legs &middot; ${missions.filter(m => m.provider !== 'osrm').length} Missions)</div>
-      <small style="color:var(--muted); font-weight:normal;">${totalKm.toFixed(1)} km &middot; ${formatDuration(totalMin)}</small>
+      <small style="color:var(--muted); font-weight:normal;">${metrics.drivingKm.toFixed(1)} km &middot; ${formatDuration(metrics.totalShiftMin)} shift</small>
     </div>
     <div style="font-size:1.35rem; color:var(--success); font-weight:700;">
-      ${totalPayout.toFixed(2)} &euro;
+      ${metrics.grossPayout.toFixed(2)} &euro;
     </div>
   `;
   mobileWrapper.appendChild(mobileTotal);
 
-  // Append both views to results
   els.results.appendChild(desktopWrapper);
   els.results.appendChild(mobileWrapper);
 
-  // Render Driver Action Protocols
+  // Render Protocols & Draw Map
   renderDriverProtocols(missions);
-
-  // Draw Polylines and Markers on Leaflet Map
   drawRouteMap(places, legs);
 }
 
@@ -587,7 +809,6 @@ function drawRouteMap(places, legs) {
 
   const group = L.featureGroup();
 
-  // Add markers with custom labels
   places.forEach((p, idx) => {
     const isStart = idx === 0;
     const isEnd = idx === places.length - 1;
@@ -598,7 +819,6 @@ function drawRouteMap(places, legs) {
     if (isStart || isEnd) marker.openPopup();
   });
 
-  // Draw road geometry
   legs.forEach((leg, i) => {
     const colors = ["#2563eb", "#6366f1", "#10b981", "#f59e0b"];
     const color = colors[i % colors.length];
@@ -618,25 +838,6 @@ function drawRouteMap(places, legs) {
 // ==========================================================================
 // Helper Utilities
 // ==========================================================================
-function buildStopsList() {
-  const origin = els.origin ? els.origin.value.trim() : "Barcelona";
-  const stopsRaw = els.stops ? els.stops.value.trim() : "";
-  const destination = els.destination ? els.destination.value.trim() : "Barcelona";
-
-  const stops = [origin];
-  if (stopsRaw) {
-    stops.push(...stopsRaw.split(",").map(s => s.trim()).filter(Boolean));
-  }
-  if (destination && destination.toLowerCase() !== origin.toLowerCase()) {
-    stops.push(destination);
-  } else if (stops.length > 1 && destination.toLowerCase() === origin.toLowerCase()) {
-    if (stops[stops.length - 1].toLowerCase() !== origin.toLowerCase()) {
-      stops.push(origin);
-    }
-  }
-  return stops;
-}
-
 function formatDuration(min) {
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
@@ -664,7 +865,7 @@ function hashString(str) {
 
 function loadExample() {
   if (els.origin) els.origin.value = "Barcelona";
-  if (els.stops) els.stops.value = "Tarragona, Zaragoza";
+  if (els.stops) els.stops.value = "Tarragona, Zaragoza, Valencia, Madrid";
   if (els.destination) els.destination.value = "Barcelona";
   if (els.totalDays) els.totalDays.value = "1";
 }
@@ -738,6 +939,5 @@ document.addEventListener("DOMContentLoaded", () => {
     els.clearBtn.addEventListener("click", clearAll);
   }
 
-  // Run initial search
   search().catch(console.error);
 });
