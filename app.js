@@ -57,7 +57,36 @@ const platformProfiles = {
   }
 };
 
-// DOM Elements
+function getSelectedProviders() {
+  const selected = [];
+  const pOtoqui = document.getElementById("prov_otoqui");
+  const pDriiveme = document.getElementById("prov_driiveme");
+  const pOnlogist = document.getElementById("prov_onlogist");
+
+  if (pOtoqui && pOtoqui.checked) selected.push("otoqui");
+  if (pDriiveme && pDriiveme.checked) selected.push("driiveme");
+  if (pOnlogist && pOnlogist.checked) selected.push("onlogist");
+  return selected;
+}
+
+// Setup interactive UI for platform checkboxes
+function setupPlatformCheckboxes() {
+  document.querySelectorAll(".platform-choice").forEach(card => {
+    const checkbox = card.querySelector("input[type='checkbox']");
+    if (!checkbox) return;
+
+    const updateState = () => {
+      if (checkbox.checked) {
+        card.classList.add("checked");
+      } else {
+        card.classList.remove("checked");
+      }
+    };
+
+    checkbox.addEventListener("change", updateState);
+    updateState();
+  });
+}
 const els = {
   origin: document.getElementById("origin"),
   destination: document.getElementById("destination"),
@@ -286,7 +315,7 @@ async function search() {
   els.results.innerHTML = "";
   if (els.driverInstructions) els.driverInstructions.innerHTML = "";
 
-  const providers = [...els.providers.selectedOptions].map(o => o.value);
+  const providers = getSelectedProviders();
   if (!providers.length) {
     els.summary.innerHTML = `<div style="color:var(--warning);">Please select at least one platform (Otoqi, Driiveme, or Onlogist).</div>`;
     return;
@@ -581,6 +610,13 @@ function clearAll() {
   if (els.destination) els.destination.value = "Barcelona";
   if (els.stops) els.stops.value = "";
   if (els.totalDays) els.totalDays.value = "1";
+  ["prov_otoqui", "prov_driiveme", "prov_onlogist"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.checked = true;
+      el.closest(".platform-choice")?.classList.add("checked");
+    }
+  });
   if (els.results) els.results.innerHTML = "";
   if (els.summary) els.summary.innerHTML = "";
   if (els.driverInstructions) els.driverInstructions.innerHTML = "";
@@ -618,6 +654,7 @@ function setupTheme() {
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
   setupTheme();
+  setupPlatformCheckboxes();
   initMap();
 
   if (els.searchBtn) {

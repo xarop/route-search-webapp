@@ -24,23 +24,20 @@ Developed in Barcelona by [xarop.com](https://xarop.com).
 
 ## 🚀 Live Demo & GitHub Pages Deployment
 
-To host this repository on GitHub Pages:
+The application is deployed and live at:
+👉 **[https://xarop.github.io/route-search-webapp/](https://xarop.github.io/route-search-webapp/)**
 
-1. Push this repository to GitHub on branch `main`:
+To publish updates to GitHub Pages:
+
+1. Push your changes to GitHub on the `main` branch:
    ```bash
-   git add .
-   git commit -m "Refactor route search webapp: modern mobile-first UI, i18n, platform integration"
    git push origin main
    ```
-2. In your GitHub repository, navigate to **Settings &rarr; Pages**.
-3. Under **Build and deployment**:
+2. In your GitHub repository settings (**Settings &rarr; Pages**):
    - **Source**: `Deploy from a branch`
    - **Branch**: `main`
    - **Folder**: `/ (root)`
-4. Click **Save**. Within 1–2 minutes, your web application will be live at:
-   ```
-   https://<your-username>.github.io/route-search-webapp/
-   ```
+3. The site will automatically build and publish to `https://xarop.github.io/route-search-webapp/`.
 
 ---
 

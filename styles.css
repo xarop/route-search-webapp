@@ -166,23 +166,33 @@ nav.main-nav a.active {
   outline: none;
 }
 
-.icon-btn, .theme-toggle {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  width: 36px;
-  height: 36px;
+/* Subtle unencapsulated Theme Toggle */
+.theme-toggle-subtle {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   cursor: pointer;
+  padding: 0;
   transition: var(--transition);
 }
 
-.icon-btn:hover, .theme-toggle:hover {
-  border-color: var(--muted);
-  background: var(--surface);
+.theme-toggle-subtle:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .theme-toggle-subtle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-subtle svg {
+  display: block;
 }
 
 /* ==========================================================================
@@ -265,15 +275,83 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-select[multiple] {
-  min-height: 85px;
-  padding: 0.4rem;
+/* ==========================================================================
+   Platform Selector Cards (UX-friendly Checkboxes)
+   ========================================================================== */
+.platform-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
 }
 
-select[multiple] option {
-  padding: 0.35rem 0.5rem;
-  border-radius: 4px;
+.platform-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
 }
+
+.platform-choice:hover {
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.platform-choice input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.platform-choice.checked {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+[data-theme="dark"] .platform-choice.checked {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.platform-choice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.platform-choice-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.platform-choice-desc {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* Perfect icon vertical alignment in buttons & components */
+button, .btn-primary, .btn-secondary, .btn-app-link, .brand, .card-header h2 {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+button svg, .btn-primary svg, .btn-secondary svg, .btn-app-link svg, .card-header h2 svg, .hint-box svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 
 .actions-bar {
   display: flex;

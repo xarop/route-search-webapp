@@ -41,8 +41,8 @@
             <option value="de">DE</option>
           </select>
 
-          <!-- Theme Toggle Button -->
-          <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+          <!-- Theme Toggle Button (subtle, borderless) -->
+          <button id="themeToggle" class="theme-toggle-subtle" aria-label="Toggle theme" title="Toggle theme">
             <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>
@@ -87,16 +87,42 @@
           <input id="stops" value="Tarragona, Zaragoza" placeholder="e.g. Tarragona, Zaragoza, Valencia, Madrid" data-i18n-placeholder="stops_placeholder" />
         </div>
 
-        <div class="field">
-          <label for="providers" data-i18n="platforms_label">Platforms to include</label>
-          <select id="providers" multiple>
-            <option value="otoqui" selected>Otoqi (B2B Deliveries)</option>
-            <option value="driiveme" selected>Driiveme (Pro Vehicle Relocation)</option>
-            <option value="onlogist" selected>Onlogist (Single Transfers)</option>
-          </select>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label data-i18n="platforms_label">Platforms to include</label>
+          <div class="platform-select-grid">
+            <label class="platform-choice checked" for="prov_otoqui">
+              <input type="checkbox" id="prov_otoqui" value="otoqui" checked />
+              <div class="platform-choice-content">
+                <span class="platform-choice-title">
+                  <span class="badge badge-otoqi">Otoqi</span>
+                </span>
+                <span class="platform-choice-desc">B2B Fleet Deliveries</span>
+              </div>
+            </label>
+
+            <label class="platform-choice checked" for="prov_driiveme">
+              <input type="checkbox" id="prov_driiveme" value="driiveme" checked />
+              <div class="platform-choice-content">
+                <span class="platform-choice-title">
+                  <span class="badge badge-driiveme">Driiveme</span>
+                </span>
+                <span class="platform-choice-desc">Vehicle Relocations (Pro)</span>
+              </div>
+            </label>
+
+            <label class="platform-choice checked" for="prov_onlogist">
+              <input type="checkbox" id="prov_onlogist" value="onlogist" checked />
+              <div class="platform-choice-content">
+                <span class="platform-choice-title">
+                  <span class="badge badge-onlogist">Onlogist</span>
+                </span>
+                <span class="platform-choice-desc">Single Vehicle Transfers</span>
+              </div>
+            </label>
+          </div>
         </div>
 
-        <div class="field">
+        <div class="field" style="grid-column: 1 / -1;">
           <label for="prefStrategy" data-i18n="strategy_label">Optimization strategy</label>
           <select id="prefStrategy">
             <option value="profit" selected data-i18n="strategy_max_profit">Maximum Profit (Chain missions)</option>
