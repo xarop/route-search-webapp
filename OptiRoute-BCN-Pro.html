@@ -47,6 +47,7 @@ th{background:#0f172a}
 <button class="tab" data-tab="add">Añadir mision</button>
 <button class="tab" data-tab="checklist">Checklist dia</button>
 <button class="tab" data-tab="links">Enlaces</button>
+<button class="tab" data-tab="providers">Proveedores</button>
 </nav>
 <main>
 <section id="dashboard" class="tabcontent">
@@ -122,6 +123,18 @@ th{background:#0f172a}
 </div>
 </div>
 </section>
+<section id="providers" class="tabcontent hidden">
+<div class="card">
+<h3>Gestión de proveedores</h3>
+<p class="muted">Añade o elimina plataformas (ONLOGIST, Otoqi, DriiveMe u otras).</p>
+<div class="row">
+<label>Nombre<input id="provName" placeholder="Nuevo proveedor"></label>
+<label>URL<input id="provUrl" placeholder="https://..."></label>
+</div>
+<button class="btn" id="addProvBtn">Añadir proveedor</button>
+<div id="providersTable" style="margin-top:1rem"></div>
+</div>
+</section>
 </main>
 <script>
 const STORAGE_KEY = "optiroute_bcn_pro_v1";
@@ -141,6 +154,17 @@ const defaultMissions = [
 ];
 let missions = loadMissions();
 let checklistState = loadChecklist();
+const defaultProviders = [
+ {name:"ONLOGIST",url:"https://www.onlogist.com/"},
+ {name:"Otoqi",url:"https://en.otoqi.com/"},
+ {name:"DriiveMe",url:"https://www.driiveme.com/"}
+];
+let providers = loadProviders();
+function loadProviders(){
+  try{const raw=localStorage.getItem(STORAGE_KEY+"_providers"); if(raw) return JSON.parse(raw);}catch(e){}
+  return [...defaultProviders];
+}
+function saveProviders(){localStorage.setItem(STORAGE_KEY+"_providers",JSON.stringify(providers));}
 function loadMissions(){
   try{const raw=localStorage.getItem(STORAGE_KEY+"_missions"); if(raw) return JSON.parse(raw);}catch(e){}
   return [...defaultMissions];
@@ -192,7 +216,31 @@ function populateDestFilter(){
   const dests=[...new Set(missions.map(m=>m.destination))];
   sel.innerHTML="<option value=''>Todos</option>"+dests.map(d=>"<option>"+d+"</option>").join("");
 }
+function populatePlatformSelects(){
+  const names = providers.map(p=>p.name);
+  const filterSel = document.getElementById("filterPlatform");
+  const currentFilter = filterSel.value;
+  filterSel.innerHTML = "<option value=''>Todas</option>" + names.map(n=>"<option>"+n+"</option>").join("");
+  if(names.includes(currentFilter)) filterSel.value=currentFilter;
+  const addSel = document.getElementById("addPlatform");
+  const currentAdd = addSel.value;
+  addSel.innerHTML = names.map(n=>"<option>"+n+"</option>").join("");
+  if(names.includes(currentAdd)) addSel.value=currentAdd; else if(names.length) addSel.value=names[0];
+}
+function renderProviders(){
+  const el=document.getElementById("providersTable");
+  if(!providers.length){el.innerHTML="<p class='muted'>Sin proveedores</p>";return;}
+  let html="<table><thead><tr><th>Nombre</th><th>URL</th><th></th></tr></thead><tbody>";
+  for(const p of providers){
+    html+="<tr><td>"+p.name+"</td><td><a href='"+p.url+"' target='_blank'>"+p.url+"</a></td><td><button class='btn danger' data-del='"+p.name+"'>Eliminar</button></td></tr>";
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+  const linksRow = document.querySelector("#links .row");
+  if(linksRow){ linksRow.innerHTML = providers.map(p=>"<a class='btn' href='"+p.url+"' target='_blank'>"+p.name+"</a>").join(""); }
+}
 function renderAll(){
+  populatePlatformSelects();
   populateDestFilter();
   const filtered=applyFilters();
   renderKPIs(filtered);
@@ -282,6 +330,24 @@ document.getElementById("saveChecklistBtn").addEventListener("click",()=>{
   checklistState.signature=document.getElementById("signature").value;
   saveChecklist();
   document.getElementById("checklistStatus").textContent="Estado guardado: "+new Date().toLocaleString();
+});
+document.getElementById("addProvBtn").addEventListener("click",()=>{
+  const name=document.getElementById("provName").value.trim();
+  const url=document.getElementById("provUrl").value.trim()||"#";
+  if(!name){alert("Nombre requerido");return;}
+  providers.push({name,url});
+  saveProviders();
+  document.getElementById("provName").value="";
+  document.getElementById("provUrl").value="";
+  renderAll();
+});
+document.getElementById("providersTable").addEventListener("click",(e)=>{
+  if(e.target.matches("button[data-del]")){
+    const name=e.target.dataset.del;
+    providers=providers.filter(p=>p.name!==name);
+    saveProviders();
+    renderAll();
+  }
 });
 renderChecklist();
 renderAll();
