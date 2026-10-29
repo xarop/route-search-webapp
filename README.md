@@ -21,5 +21,10 @@ Then open in your browser:
 - Platforms are B2B; prices in `OptiRoute-BCN-Pro.html` are editable estimates.
 - Providers can be added/removed from the "Providers" tab.
 
-## Developed in Barcelona by xarop.com
-https://xarop.com
+## Publish to GitHub Pages
+1. Go to repository Settings → Pages.
+2. Source: Deploy from a branch.
+3. Branch: `main`, folder: `/ (root)`.
+4. Save. The site will be available at `https://xarop.github.io/route-search-webapp/`.
+
+Developed in Barcelona by [xarop.com](https://xarop.com)
