@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OptiRoute BCN Pro</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#0f172a;color:#e2e8f0}
+header{background:#1e293b;padding:1rem 1.5rem;border-bottom:1px solid #334155}
+header h1{margin:0;font-size:1.4rem}
+header p{margin:.25rem 0 0;opacity:.7;font-size:.9rem}
+nav{display:flex;gap:.5rem;padding:1rem 1.5rem;flex-wrap:wrap}
+nav button{background:#334155;color:#e2e8f0;border:none;padding:.5rem .9rem;border-radius:6px;cursor:pointer}
+nav button.active{background:#2563eb}
+main{max-width:1200px;margin:0 auto;padding:1rem 1.5rem}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:1rem;margin-bottom:1rem}
+.grid{display:grid;gap:1rem}
+.grid2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+input,select,textarea{width:100%;padding:.5rem;border:1px solid #475569;border-radius:6px;background:#0f172a;color:#e2e8f0}
+label{font-size:.85rem;display:block;margin-bottom:.3rem}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:.5rem;border-bottom:1px solid #334155;text-align:left}
+th{background:#0f172a}
+.badge{display:inline-block;padding:.15rem .45rem;border-radius:999px;font-size:.7rem;background:#334155}
+.btn{background:#2563eb;color:#fff;border:none;padding:.45rem .8rem;border-radius:6px;cursor:pointer;font-size:.85rem}
+.btn.secondary{background:#475569}
+.btn.danger{background:#dc2626}
+.row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:end}
+.row>*{flex:1 1 180px}
+.kpi{font-size:1.3rem;font-weight:700}
+.muted{color:#94a3b8;font-size:.8rem}
+.hidden{display:none}
+.checklist li{margin:.4rem 0;list-style:none}
+.checklist input{width:auto;margin-right:.5rem}
+</style>
+</head>
+<body>
+<header>
+<h1>OptiRoute BCN Pro</h1>
+<p>Misiones de transporte de vehiculos en Barcelona · ONLOGIST · Otoqi · DriiveMe</p>
+</header>
+<nav>
+<button class="tab active" data-tab="dashboard">Dashboard</button>
+<button class="tab" data-tab="missions">Misiones</button>
+<button class="tab" data-tab="chain">Encadenar viajes</button>
+<button class="tab" data-tab="add">Añadir mision</button>
+<button class="tab" data-tab="checklist">Checklist dia</button>
+<button class="tab" data-tab="links">Enlaces</button>
+</nav>
+<main>
+<section id="dashboard" class="tabcontent">
+<div class="grid grid2">
+<div class="card"><div class="muted">Misiones disponibles</div><div class="kpi" id="kpiMissions">0</div></div>
+<div class="card"><div class="muted">Beneficio neto total</div><div class="kpi" id="kpiNet">0 €</div></div>
+<div class="card"><div class="muted">Km totales</div><div class="kpi" id="kpiKm">0</div></div>
+<div class="card"><div class="muted">Tiempo total</div><div class="kpi" id="kpiTime">0 h</div></div>
+</div>
+<div class="card">
+<h3>Filtros</h3>
+<div class="row">
+<label>Plataforma<select id="filterPlatform"><option value="">Todas</option><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
+<label>Destino<select id="filterDest"><option value="">Todos</option></select></label>
+<label>Beneficio neto min (€)<input id="filterMinNet" type="number" value="0"></label>
+<label>Duracion max (min)<input id="filterMaxDur" type="number" value="9999"></label>
+</div>
+</div>
+<div class="card"><h3>Misiones filtradas</h3><div id="filteredTable"></div></div>
+</section>
+<section id="missions" class="tabcontent hidden">
+<div class="card"><h3>Base de datos de misiones BCN</h3><div id="missionsTable"></div></div>
+</section>
+<section id="chain" class="tabcontent hidden">
+<div class="card">
+<h3>Encadenador de ida y vuelta</h3>
+<p class="muted">Selecciona una mision de ida para encontrar vueltas/intermedias compatibles por destino.</p>
+<label>Mision de ida<select id="chainOrigin"></select></label>
+<button class="btn" id="buildChainBtn">Buscar cadenas</button>
+<div id="chainResults" style="margin-top:1rem"></div>
+</div>
+</section>
+<section id="add" class="tabcontent hidden">
+<div class="card">
+<h3>Añadir mision en vivo</h3>
+<div class="row">
+<label>Plataforma<select id="addPlatform"><option>ONLOGIST</option><option>Otoqi</option><option>DriiveMe</option></select></label>
+<label>Origen<input id="addOrigin" value="Barcelona El Prat T1"></label>
+<label>Destino<input id="addDest" value="Madrid Barajas"></label>
+<label>Distancia km<input id="addKm" type="number" value="620"></label>
+<label>Duracion min<input id="addDur" type="number" value="390"></label>
+<label>Tarifa bruta €<input id="addGross" type="number" value="180"></label>
+<label>Combustible €<input id="addFuel" type="number" value="45"></label>
+<label>Peajes €<input id="addTolls" type="number" value="38"></label>
+<label>Transito €<input id="addTransit" type="number" value="0"></label>
+<label>Prorrata autónomo €/dia<input id="addFee" type="number" value="0"></label>
+<label>Dias<input id="addDays" type="number" value="1"></label>
+<label>Reembolsable<input id="addReimb" type="checkbox"></label>
+</div>
+<button class="btn" id="addMissionBtn">Guardar mision</button>
+</div>
+</section>
+<section id="checklist" class="tabcontent hidden">
+<div class="card">
+<h3>Checklist del dia</h3>
+<ul class="checklist" id="checklistItems"></ul>
+<div class="row">
+<label>Km iniciales<input id="startKm" type="number" value="0"></label>
+<label>Nivel combustible inicial<input id="startFuel" type="number" value="100"></label>
+<label>Firma digital<input id="signature" placeholder="Nombre del conductor"></label>
+</div>
+<button class="btn" id="saveChecklistBtn">Guardar estado</button>
+<div id="checklistStatus" class="muted" style="margin-top:.5rem"></div>
+</div>
+</section>
+<section id="links" class="tabcontent hidden">
+<div class="card">
+<h3>Enlaces rapidos a plataformas</h3>
+<div class="row">
+<a class="btn" href="https://www.onlogist.com/" target="_blank">ONLOGIST Driver</a>
+<a class="btn" href="https://en.otoqi.com/" target="_blank">Otoqi</a>
+<a class="btn" href="https://www.driiveme.com/" target="_blank">DriiveMe</a>
+</div>
+</div>
+</section>
+</main>
+<script>
+const STORAGE_KEY = "optiroute_bcn_pro_v1";
+const defaultMissions = [
+ {id:1,platform:"ONLOGIST",origin:"Barcelona El Prat T1",destination:"Madrid Barajas",distanceKm:620,durationMin:390,gross:180,fuel:45,tolls:38,transit:0,fee:0,days:1,reimb:false},
+ {id:2,platform:"ONLOGIST",origin:"Madrid Barajas",destination:"Barcelona El Prat T1",distanceKm:620,durationMin:390,gross:175,fuel:45,tolls:38,transit:0,fee:0,days:1,reimb:false},
+ {id:3,platform:"Otoqi",origin:"Barcelona Sants",destination:"Valencia Manises",distanceKm:350,durationMin:230,gross:110,fuel:28,tolls:22,transit:15,fee:0,days:1,reimb:false},
+ {id:4,platform:"Otoqi",origin:"Valencia Manises",destination:"Barcelona Sants",distanceKm:350,durationMin:230,gross:105,fuel:28,tolls:22,transit:15,fee:0,days:1,reimb:false},
+ {id:5,platform:"DriiveMe",origin:"Barcelona Zona Franca",destination:"Zaragoza Plaza",distanceKm:295,durationMin:190,gross:95,fuel:22,tolls:18,transit:0,fee:0,days:1,reimb:false},
+ {id:6,platform:"DriiveMe",origin:"Zaragoza Plaza",destination:"Barcelona Zona Franca",distanceKm:295,durationMin:190,gross:90,fuel:22,tolls:18,transit:0,fee:0,days:1,reimb:false},
+ {id:7,platform:"ONLOGIST",origin:"Barcelona Martorell",destination:"Girona",distanceKm:110,durationMin:75,gross:55,fuel:9,tolls:6,transit:0,fee:0,days:1,reimb:false},
+ {id:8,platform:"ONLOGIST",origin:"Girona",destination:"Barcelona Martorell",distanceKm:110,durationMin:75,gross:50,fuel:9,tolls:6,transit:0,fee:0,days:1,reimb:false},
+ {id:9,platform:"Otoqi",origin:"Barcelona Badalona",destination:"Tarragona",distanceKm:95,durationMin:70,gross:48,fuel:8,tolls:5,transit:0,fee:0,days:1,reimb:false},
+ {id:10,platform:"Otoqi",origin:"Tarragona",destination:"Barcelona Badalona",distanceKm:95,durationMin:70,gross:45,fuel:8,tolls:5,transit:0,fee:0,days:1,reimb:false},
+ {id:11,platform:"DriiveMe",origin:"Barcelona El Prat T2",destination:"Madrid Atocha",distanceKm:625,durationMin:400,gross:185,fuel:46,tolls:38,transit:20,fee:0,days:1,reimb:false},
+ {id:12,platform:"DriiveMe",origin:"Madrid Atocha",destination:"Barcelona El Prat T2",distanceKm:625,durationMin:400,gross:180,fuel:46,tolls:38,transit:20,fee:0,days:1,reimb:false}
+];
+let missions = loadMissions();
+let checklistState = loadChecklist();
+function loadMissions(){
+  try{const raw=localStorage.getItem(STORAGE_KEY+"_missions"); if(raw) return JSON.parse(raw);}catch(e){}
+  return [...defaultMissions];
+}
+function saveMissions(){localStorage.setItem(STORAGE_KEY+"_missions",JSON.stringify(missions));}
+function loadChecklist(){
+  try{const raw=localStorage.getItem(STORAGE_KEY+"_checklist"); if(raw) return JSON.parse(raw);}catch(e){}
+  return {startKm:0,startFuel:100,signature:"",items:{}};
+}
+function saveChecklist(){localStorage.setItem(STORAGE_KEY+"_checklist",JSON.stringify(checklistState));}
+function netProfit(m){
+  const expenses = (m.fuel||0)+(m.tolls||0)+(m.transit||0)+((m.fee||0)*(m.days||1));
+  let net = (m.gross||0)-expenses;
+  if(m.reimb){ net = (m.gross||0); }
+  return Number(net.toFixed(2));
+}
+function formatDuration(min){const h=Math.floor(min/60);const m=Math.round(min%60);if(h===0)return m+" min";return h+" h "+m+" min";}
+function renderKPIs(list){
+  document.getElementById("kpiMissions").textContent=list.length;
+  document.getElementById("kpiNet").textContent=list.reduce((s,m)=>s+netProfit(m),0).toFixed(2)+" €";
+  document.getElementById("kpiKm").textContent=list.reduce((s,m)=>s+(m.distanceKm||0),0).toFixed(0);
+  document.getElementById("kpiTime").textContent=(list.reduce((s,m)=>s+(m.durationMin||0),0)/60).toFixed(1);
+}
+function applyFilters(){
+  const platform=document.getElementById("filterPlatform").value;
+  const dest=document.getElementById("filterDest").value;
+  const minNet=parseFloat(document.getElementById("filterMinNet").value)||0;
+  const maxDur=parseFloat(document.getElementById("filterMaxDur").value)||9999;
+  return missions.filter(m=>{
+    if(platform && m.platform!==platform) return false;
+    if(dest && m.destination!==dest) return false;
+    if(netProfit(m)<minNet) return false;
+    if((m.durationMin||0)>maxDur) return false;
+    return true;
+  });
+}
+function renderTable(containerId,list){
+  const el=document.getElementById(containerId);
+  if(!list.length){el.innerHTML="<p class='muted'>Sin resultados</p>";return;}
+  let html="<table><thead><tr><th>Plat</th><th>Origen</th><th>Destino</th><th>km</th><th>Tiempo</th><th>Bruto</th><th>Neto</th></tr></thead><tbody>";
+  for(const m of list){
+    html+="<tr><td><span class='badge'>"+m.platform+"</span></td><td>"+m.origin+"</td><td>"+m.destination+"</td><td>"+m.distanceKm+"</td><td>"+formatDuration(m.durationMin)+"</td><td>"+m.gross+"€</td><td><strong>"+netProfit(m)+"€</strong></td></tr>";
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+}
+function populateDestFilter(){
+  const sel=document.getElementById("filterDest");
+  const dests=[...new Set(missions.map(m=>m.destination))];
+  sel.innerHTML="<option value=''>Todos</option>"+dests.map(d=>"<option>"+d+"</option>").join("");
+}
+function renderAll(){
+  populateDestFilter();
+  const filtered=applyFilters();
+  renderKPIs(filtered);
+  renderTable("filteredTable",filtered);
+  renderTable("missionsTable",missions);
+  const co=document.getElementById("chainOrigin");
+  co.innerHTML=missions.map(m=>"<option value='"+m.id+"'>"+m.platform+" · "+m.origin+" → "+m.destination+" ("+netProfit(m)+"€)</option>").join("");
+}
+function switchTab(name){
+  document.querySelectorAll(".tabcontent").forEach(s=>s.classList.add("hidden"));
+  document.getElementById(name).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+document.getElementById("filterPlatform").addEventListener("change",renderAll);
+document.getElementById("filterDest").addEventListener("change",renderAll);
+document.getElementById("filterMinNet").addEventListener("input",renderAll);
+document.getElementById("filterMaxDur").addEventListener("input",renderAll);
+document.getElementById("addMissionBtn").addEventListener("click",()=>{
+  const m={
+    id:Date.now(),
+    platform:document.getElementById("addPlatform").value,
+    origin:document.getElementById("addOrigin").value,
+    destination:document.getElementById("addDest").value,
+    distanceKm:parseFloat(document.getElementById("addKm").value)||0,
+    durationMin:parseFloat(document.getElementById("addDur").value)||0,
+    gross:parseFloat(document.getElementById("addGross").value)||0,
+    fuel:parseFloat(document.getElementById("addFuel").value)||0,
+    tolls:parseFloat(document.getElementById("addTolls").value)||0,
+    transit:parseFloat(document.getElementById("addTransit").value)||0,
+    fee:parseFloat(document.getElementById("addFee").value)||0,
+    days:parseFloat(document.getElementById("addDays").value)||1,
+    reimb:document.getElementById("addReimb").checked
+  };
+  missions.push(m);
+  saveMissions();
+  renderAll();
+  alert("Mision guardada");
+});
+document.getElementById("buildChainBtn").addEventListener("click",()=>{
+  const id=parseInt(document.getElementById("chainOrigin").value);
+  const origin=missions.find(m=>m.id===id);
+  if(!origin){return;}
+  const chains=[];
+  for(const m2 of missions){
+    if(m2.id===origin.id) continue;
+    if(m2.origin.toLowerCase()===origin.destination.toLowerCase()){
+      chains.push({first:origin,second:m2,totalNet:netProfit(origin)+netProfit(m2),totalKm:origin.distanceKm+m2.distanceKm,totalMin:origin.durationMin+m2.durationMin});
+    }
+  }
+  const el=document.getElementById("chainResults");
+  if(!chains.length){el.innerHTML="<p class='muted'>No se encontraron cadenas compatibles.</p>";return;}
+  let html="<table><thead><tr><th>Ida</th><th>Vuelta/Intermedia</th><th>Neto total</th><th>Km</th><th>Tiempo</th></tr></thead><tbody>";
+  for(const c of chains){
+    html+="<tr><td>"+c.first.platform+" "+c.first.origin+"→"+c.first.destination+"</td><td>"+c.second.platform+" "+c.second.origin+"→"+c.second.destination+"</td><td><strong>"+c.totalNet.toFixed(2)+"€</strong></td><td>"+c.totalKm+"</td><td>"+formatDuration(c.totalMin)+"</td></tr>";
+  }
+  html+="</tbody></table>";
+  el.innerHTML=html;
+});
+const checklistItems=[
+ "Fotos de estado inicial del vehiculo",
+ "Km iniciales registrados",
+ "Nivel de combustible inicial",
+ "Documentacion entregada",
+ "Firma digital del cliente",
+ "Fotos de entrega final"
+];
+function renderChecklist(){
+  const ul=document.getElementById("checklistItems");
+  ul.innerHTML=checklistItems.map((it,i)=>{
+    const checked=checklistState.items[i]?"checked":"";
+    return "<li><input type='checkbox' data-i='"+i+"' "+checked+"> "+it+"</li>";
+  }).join("");
+  document.getElementById("startKm").value=checklistState.startKm||0;
+  document.getElementById("startFuel").value=checklistState.startFuel||100;
+  document.getElementById("signature").value=checklistState.signature||"";
+}
+document.getElementById("checklistItems").addEventListener("change",(e)=>{
+  if(e.target.matches("input[type=checkbox]")){
+    checklistState.items[e.target.dataset.i]=e.target.checked;
+    saveChecklist();
+  }
+});
+document.getElementById("saveChecklistBtn").addEventListener("click",()=>{
+  checklistState.startKm=parseFloat(document.getElementById("startKm").value)||0;
+  checklistState.startFuel=parseFloat(document.getElementById("startFuel").value)||0;
+  checklistState.signature=document.getElementById("signature").value;
+  saveChecklist();
+  document.getElementById("checklistStatus").textContent="Estado guardado: "+new Date().toLocaleString();
+});
+renderChecklist();
+renderAll();
+</script>
+</body>
+</html>
