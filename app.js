@@ -628,7 +628,7 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
       <tr>
         <th>Leg &amp; Route</th>
         <th>Distance &amp; Time</th>
-        <th>Mission &amp; Platform</th>
+        <th>Mission Ref</th>
         <th>Driver Payout</th>
         <th>Navigation</th>
       </tr>
@@ -646,10 +646,11 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
     const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
     const wazeUrl = `https://waze.com/ul?q=${destParam}&navigate=yes`;
 
+    // Compact reference code (e.g. #ONL-4472, #OTQ-8120, #DRV-1930)
+    const refCode = m.missionId.startsWith("#") ? m.missionId : `#${m.missionId}`;
     const unifiedBadge = `
       <a href="${m.appUrl}" target="_blank" rel="noopener" class="badge ${m.badgeClass} badge-link" title="Open in ${m.label} Driver App">
-        <span>${m.label}</span>
-        <small style="opacity:0.85; font-size:0.75rem;">#${m.missionId}</small>
+        <span>${refCode}</span>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
     `;
