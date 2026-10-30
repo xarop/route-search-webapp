@@ -132,6 +132,25 @@
         </div>
       </div>
 
+      <!-- Paste missions from driver apps -->
+      <div class="field" style="grid-column: 1 / -1; margin-top: 0.5rem;">
+        <label for="missionPaste">Paste missions (one per line: Origin -> Destination)</label>
+        <textarea id="missionPaste" rows="3" placeholder="e.g. Barcelona -> Tarragona&#10;Tarragona -> Zaragoza"></textarea>
+        <div style="margin-top:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" id="parseMissionsBtn" class="btn-secondary">Parse &amp; fill</button>
+          <button type="button" id="clearPasteBtn" class="btn-secondary">Clear</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--muted); margin-top:0.4rem;">Tip: copy the pickup/dropoff addresses from your driver app. Full addresses or GPS (lat,lon) are accepted.</p>
+      </div>
+
+      <!-- Recent searches -->
+      <div class="field" style="grid-column: 1 / -1;">
+        <label for="recentSearches">Recent searches</label>
+        <select id="recentSearches">
+          <option value="">-- select a recent search --</option>
+        </select>
+      </div>
+
       <div class="actions-bar">
         <button id="searchBtn" class="btn-primary">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

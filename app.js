@@ -99,7 +99,11 @@ const els = {
   clearBtn: document.getElementById("clearBtn"),
   summary: document.getElementById("summary"),
   results: document.getElementById("results"),
-  driverInstructions: document.getElementById("driverInstructions")
+  driverInstructions: document.getElementById("driverInstructions"),
+  missionPaste: document.getElementById("missionPaste"),
+  parseMissionsBtn: document.getElementById("parseMissionsBtn"),
+  clearPasteBtn: document.getElementById("clearPasteBtn"),
+  recentSearches: document.getElementById("recentSearches")
 };
 
 let map = null;
@@ -598,6 +602,8 @@ async function search() {
     return;
   }
 
+  saveRecentSearch(originName, destName, stopsRaw, totalDays, strategy);
+
   // Geocode Origin & Destination
   let originPlace, destPlace;
   try {
@@ -1050,6 +1056,75 @@ function clearAll() {
 }
 
 // ==========================================================================
+// Paste Missions Parser & Recent Searches
+// ==========================================================================
+function parseMissionsText(text) {
+  const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const pairs = [];
+  for (const line of lines) {
+    let parts = line.split(/\s*(?:->|→|=>|;|\|)\s*/);
+    if (parts.length < 2) {
+      parts = line.split(/\s*,\s*/);
+    }
+    if (parts.length >= 2) {
+      pairs.push([parts[0].trim(), parts[1].trim()]);
+    }
+  }
+  if (!pairs.length) return null;
+  const origin = pairs[0][0];
+  const destination = pairs[pairs.length - 1][1];
+  const seen = new Set([origin.toLowerCase(), destination.toLowerCase()]);
+  const intermediate = [];
+  for (const [a, b] of pairs) {
+    for (const x of [a, b]) {
+      const k = x.toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        intermediate.push(x);
+      }
+    }
+  }
+  return { origin, destination, stops: intermediate.join(", ") };
+}
+
+function loadRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem("recentSearches") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveRecentSearch(origin, destination, stops, totalDays, strategy) {
+  if (!origin || !destination) return;
+  const list = loadRecentSearches();
+  const key = `${origin}|${destination}|${stops}`;
+  const filtered = list.filter(x => `${x.origin}|${x.destination}|${x.stops}` !== key);
+  filtered.unshift({ origin, destination, stops, totalDays, strategy, ts: Date.now() });
+  const trimmed = filtered.slice(0, 10);
+  localStorage.setItem("recentSearches", JSON.stringify(trimmed));
+  renderRecentSearches();
+}
+
+function renderRecentSearches() {
+  if (!els.recentSearches) return;
+  const list = loadRecentSearches();
+  els.recentSearches.innerHTML = `<option value="">-- select a recent search --</option>` +
+    list.map((x, i) => `<option value="${i}">${x.origin} → ${x.destination}${x.stops ? " (" + x.stops + ")" : ""}</option>`).join("");
+}
+
+function applyRecentSearch(idx) {
+  const list = loadRecentSearches();
+  const x = list[idx];
+  if (!x) return;
+  if (els.origin) els.origin.value = x.origin;
+  if (els.destination) els.destination.value = x.destination;
+  if (els.stops) els.stops.value = x.stops || "";
+  if (els.totalDays) els.totalDays.value = x.totalDays || 1;
+  if (els.prefStrategy && x.strategy) els.prefStrategy.value = x.strategy;
+}
+
+// ==========================================================================
 // Theme Setup
 // ==========================================================================
 function setupTheme() {
@@ -1096,6 +1171,35 @@ document.addEventListener("DOMContentLoaded", () => {
   if (els.clearBtn) {
     els.clearBtn.addEventListener("click", clearAll);
   }
+
+  if (els.parseMissionsBtn) {
+    els.parseMissionsBtn.addEventListener("click", () => {
+      const text = els.missionPaste ? els.missionPaste.value : "";
+      const parsed = parseMissionsText(text);
+      if (!parsed) {
+        alert("Could not parse missions. Use one per line: Origin -> Destination");
+        return;
+      }
+      if (els.origin) els.origin.value = parsed.origin;
+      if (els.destination) els.destination.value = parsed.destination;
+      if (els.stops) els.stops.value = parsed.stops;
+    });
+  }
+
+  if (els.clearPasteBtn) {
+    els.clearPasteBtn.addEventListener("click", () => {
+      if (els.missionPaste) els.missionPaste.value = "";
+    });
+  }
+
+  if (els.recentSearches) {
+    els.recentSearches.addEventListener("change", () => {
+      const idx = parseInt(els.recentSearches.value, 10);
+      if (!isNaN(idx)) applyRecentSearch(idx);
+    });
+  }
+
+  renderRecentSearches();
 
   search().catch(console.error);
 });
