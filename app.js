@@ -124,7 +124,7 @@ function initMap() {
 }
 
 // ==========================================================================
-// Geocoding via Nominatim (OpenStreetMap) – Spain-only results (countrycodes=es)
+// Geocoding via Nominatim (OpenStreetMap) – precise address preferred over generic city
 // ==========================================================================
 async function geocode(place) {
   const trimmed = place.trim();
@@ -133,31 +133,70 @@ async function geocode(place) {
     return geocodeCache.get(cacheKey);
   }
 
-  // Use Nominatim with countrycodes=es to guarantee Spanish cities only
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&countrycodes=es&format=json&limit=5&addressdetails=1`;
-  const res = await fetch(url, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
-  if (!res.ok) throw new Error(`Geocoding failed for: ${trimmed}`);
-  const data = await res.json();
-  if (!data || !data.length) {
-    // Fallback: try without country restriction
-    const fallbackUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&limit=3`;
-    const fallbackRes = await fetch(fallbackUrl, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
-    const fallbackData = await fallbackRes.json();
-    if (!fallbackData || !fallbackData.length) throw new Error(`Location not found: "${trimmed}"`);
-    const fb = fallbackData[0];
-    const result = { name: trimmed, fullName: fb.display_name.split(",").slice(0, 2).join(",").trim(), lat: parseFloat(fb.lat), lon: parseFloat(fb.lon) };
-    geocodeCache.set(cacheKey, result);
-    return result;
+  // If input is already GPS coordinates, reverse-geocode to get a precise address
+  const coordMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lon = parseFloat(coordMatch[2]);
+    try {
+      const revUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+      const revRes = await fetch(revUrl, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
+      const revData = await revRes.json();
+      const addr = revData.address || {};
+      const city = addr.city || addr.town || addr.village || addr.municipality || addr.hamlet || trimmed;
+      const fullAddress = revData.display_name || trimmed;
+      const result = { name: city, city, fullName: fullAddress.split(",").slice(0, 3).join(",").trim(), address: fullAddress, lat, lon, isPrecise: true };
+      geocodeCache.set(cacheKey, result);
+      return result;
+    } catch (e) {
+      const result = { name: trimmed, city: trimmed, fullName: trimmed, address: trimmed, lat, lon };
+      geocodeCache.set(cacheKey, result);
+      return result;
+    }
   }
 
-  // Prefer city/town class over other types
-  const best = data.find(r => r.type === "city" || r.type === "town" || r.addresstype === "city" || r.addresstype === "municipality") || data[0];
-  const shortName = best.display_name.split(",").slice(0, 2).join(",").trim();
+  const genericTypes = new Set(["city", "town", "municipality", "administrative", "state", "country", "county", "region", "province", "village", "hamlet"]);
+
+  const fetchResults = async (url) => {
+    const res = await fetch(url, { headers: { "Accept-Language": "es", "User-Agent": "RealRouteFinder/1.0" } });
+    if (!res.ok) throw new Error(`Geocoding failed for: ${trimmed}`);
+    return res.json();
+  };
+
+  let data = [];
+  try {
+    const primaryUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&countrycodes=es&format=json&limit=8&addressdetails=1`;
+    data = await fetchResults(primaryUrl);
+  } catch (e) {
+    // ignore, try fallback
+  }
+
+  if (!data || !data.length) {
+    const fallbackUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&limit=8&addressdetails=1`;
+    const fallbackData = await fetchResults(fallbackUrl);
+    if (!fallbackData || !fallbackData.length) throw new Error(`Location not found: "${trimmed}"`);
+    data = fallbackData;
+  }
+
+  const precise = data.find(r => !genericTypes.has(r.type) && !genericTypes.has(r.addresstype));
+  const cityResult = data.find(r => r.type === "city" || r.addresstype === "city" || r.type === "town" || r.addresstype === "town");
+  const best = precise || cityResult || data[0];
+
+  const isPrecise = !genericTypes.has(best.type) && !genericTypes.has(best.addresstype);
+
+  const addr = best.address || {};
+  const city = addr.city || addr.town || addr.village || addr.municipality || addr.hamlet || trimmed;
+  const fullAddress = best.display_name || trimmed;
+  const shortAddress = fullAddress.split(",").slice(0, 3).join(",").trim();
+
   const result = {
     name: trimmed,
-    fullName: shortName,
+    city,
+    fullName: shortAddress,
+    address: fullAddress,
     lat: parseFloat(best.lat),
-    lon: parseFloat(best.lon)
+    lon: parseFloat(best.lon),
+    isPrecise
   };
   geocodeCache.set(cacheKey, result);
   return result;
@@ -204,7 +243,8 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000);
-      const res = await fetch(`${customUrl}/missions/search?origin=${encodeURIComponent(from.name)}&destination=${encodeURIComponent(to.name)}`, {
+      const url = `${customUrl}/missions/search?origin=${encodeURIComponent(from.name)}&destination=${encodeURIComponent(to.name)}&originLat=${from.lat}&originLon=${from.lon}&destLat=${to.lat}&destLon=${to.lon}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${key}`, "x-api-key": key },
         signal: controller.signal
       });
@@ -219,6 +259,14 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
             badgeClass: prof.badgeClass,
             origin: from.name,
             destination: to.name,
+            originCity: m.originCity || m.origin_city || from.city || from.name,
+            destCity: m.destCity || m.dest_city || m.destinationCity || to.city || to.name,
+            originAddress: m.originAddress || m.origin_address || m.origin || from.address || from.fullName || from.name,
+            destinationAddress: m.destinationAddress || m.destination_address || m.destination || to.address || to.fullName || to.name,
+            originLat: (m.originLat != null ? m.originLat : m.origin_lat) ?? from.lat,
+            originLon: (m.originLon != null ? m.originLon : m.origin_lon) ?? from.lon,
+            destLat: (m.destLat != null ? m.destLat : m.dest_lat) ?? to.lat,
+            destLon: (m.destLon != null ? m.destLon : m.dest_lon) ?? to.lon,
             distanceKm: m.distanceKm || distanceKm,
             durationMin: m.durationMin || durationMin,
             payout: m.payout || m.price || 0,
@@ -254,6 +302,14 @@ async function fetchPlatformMission(provider, from, to, distanceKm, durationMin)
     badgeClass: prof.badgeClass,
     origin: from.name,
     destination: to.name,
+    originCity: from.city || from.name,
+    destCity: to.city || to.name,
+    originAddress: from.isPrecise ? (from.address || from.fullName || from.name) : from.name,
+    destinationAddress: to.isPrecise ? (to.address || to.fullName || to.name) : to.name,
+    originLat: from.lat,
+    originLon: from.lon,
+    destLat: to.lat,
+    destLon: to.lon,
     distanceKm,
     durationMin,
     payout,
@@ -378,6 +434,14 @@ async function evaluateStopSequence(places, selectedProviders, strategy, totalDa
         badgeClass: "badge-osrm",
         origin: from.name,
         destination: to.name,
+        originCity: from.city || from.name,
+        destCity: to.city || to.name,
+        originAddress: from.isPrecise ? (from.address || from.fullName || from.name) : from.name,
+        destinationAddress: to.isPrecise ? (to.address || to.fullName || to.name) : to.name,
+        originLat: from.lat,
+        originLon: from.lon,
+        destLat: to.lat,
+        destLon: to.lon,
         distanceKm: road.distanceKm,
         durationMin: road.durationMin,
         payout: 0,
@@ -595,7 +659,7 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
           const summaryStr = `${candidate.metrics.drivingKm.toFixed(0)} km · ${formatDuration(candidate.metrics.totalShiftMin)}`;
           return `
             <button class="route-alt-tab ${isActive ? 'active' : ''}" data-opt-idx="${idx}">
-              ${label}: ${candidate.places.slice(1, -1).map(p => p.name).join(" → ") || candidate.places[1]?.name || 'Direct'} (${summaryStr})
+              ${label}: ${candidate.places.slice(1, -1).map(p => p.city || p.name).join(" → ") || candidate.places[1]?.city || candidate.places[1]?.name || 'Direct'} (${summaryStr})
             </button>
           `;
         }).join("")}
@@ -644,7 +708,7 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
   els.summary.innerHTML = `
     ${altsHtml}
     <div class="summary-headline">
-      ${places.map(p => p.name).join(" &rarr; ")}
+      ${places.map(p => p.city || p.name).join(" &rarr; ")}
     </div>
     
     <div class="kpi-row">
@@ -723,10 +787,18 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
   mobileWrapper.className = "mobile-leg-cards mobile-only";
 
   missions.forEach((m) => {
-    const originParam = encodeURIComponent(m.origin);
-    const destParam = encodeURIComponent(m.destination);
+    const originCoord = (m.originLat != null && m.originLon != null) ? `${m.originLat},${m.originLon}` : null;
+    const destCoord = (m.destLat != null && m.destLon != null) ? `${m.destLat},${m.destLon}` : null;
+    const originParam = originCoord ? originCoord : encodeURIComponent(m.origin);
+    const destParam = destCoord ? destCoord : encodeURIComponent(m.destination);
     const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
     const wazeUrl = `https://waze.com/ul?q=${destParam}&navigate=yes`;
+
+    const originAddr = (m.originAddress && m.originAddress !== m.origin) ? m.originAddress : '';
+    const destAddr = (m.destinationAddress && m.destinationAddress !== m.destination) ? m.destinationAddress : '';
+    const addrLine = (originAddr || destAddr)
+      ? `<div style="font-size:0.78rem; color:var(--muted);">${originAddr || m.origin} &rarr; ${destAddr || m.destination}</div>`
+      : '';
 
     const refCode = m.missionId.startsWith("#") ? m.missionId : `#${m.missionId}`;
     const unifiedBadge = `
@@ -740,7 +812,8 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <div style="font-weight:700; font-size:0.95rem;">${m.origin} &rarr; ${m.destination}</div>
+        <div style="font-weight:700; font-size:0.95rem;">${m.originCity || m.origin} &rarr; ${m.destCity || m.destination}</div>
+        ${addrLine}
       </td>
       <td>
         <div><strong>${m.distanceKm.toFixed(1)} km</strong></div>
@@ -775,7 +848,10 @@ function renderActiveOption(totalDays, totalCandidateStopsCount) {
     card.className = "leg-card";
     card.innerHTML = `
       <div class="leg-card-header">
-        <div class="leg-route">${m.origin} &rarr; ${m.destination}</div>
+        <div>
+          <div class="leg-route">${m.originCity || m.origin} &rarr; ${m.destCity || m.destination}</div>
+          ${addrLine}
+        </div>
         <div class="leg-payout">${m.payout > 0 ? `${m.payout.toFixed(2)} &euro;` : 'Transit'}</div>
       </div>
 
@@ -894,10 +970,10 @@ function drawRouteMap(places, legs) {
   places.forEach((p, idx) => {
     const isStart = idx === 0;
     const isEnd = idx === places.length - 1;
-    const label = isStart ? `Start: ${p.name}` : (isEnd ? `Finish: ${p.name}` : `Stop ${idx}: ${p.name}`);
+    const label = isStart ? `Start: ${p.city || p.name}` : (isEnd ? `Finish: ${p.city || p.name}` : `Stop ${idx}: ${p.city || p.name}`);
 
     const marker = L.marker([p.lat, p.lon]).addTo(group);
-    marker.bindPopup(`<strong>${label}</strong><br/>${p.fullName || p.name}`);
+    marker.bindPopup(`<strong>${label}</strong><br/>${p.address || p.fullName || p.name}`);
     if (isStart || isEnd) marker.openPopup();
   });
 
